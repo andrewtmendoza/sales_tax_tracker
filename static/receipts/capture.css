@@ -1,0 +1,288 @@
+body.capture-page {
+  margin: 0;
+  min-height: 100vh;
+  background: #f3f4f6;
+  color: #111827;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.capture-page .app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.capture-page .app-navbar,
+.capture-page .app-main,
+.capture-shell {
+  width: min(100%, 28rem);
+  margin: 0 auto;
+}
+
+.capture-page .app-navbar {
+  min-height: 4rem;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.capture-page .app-brand {
+  color: #111827;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.capture-page .app-nav {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.capture-page .app-nav a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 0.8rem;
+  border-radius: 999px;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.capture-page .app-nav a:hover,
+.capture-page .app-nav a:focus-visible {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.capture-page .app-main {
+  padding: 1rem;
+}
+
+.capture-shell {
+  padding-bottom: 6rem;
+}
+
+.capture-card {
+  background: #ffffff;
+  border-radius: 2rem;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+}
+
+.capture-card-body {
+  padding: 1.25rem;
+}
+
+.capture-header,
+.capture-row,
+.capture-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.capture-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.capture-subtitle,
+.capture-muted,
+.capture-offline-ready {
+  color: #64748b;
+}
+
+.capture-badge,
+.capture-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.75rem;
+  height: 2rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.capture-badge.badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.capture-badge.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.capture-count {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.capture-camera,
+.capture-panel {
+  background: #f8fafc;
+  border: 1px solid #dbe2ea;
+  border-radius: 1.5rem;
+}
+
+.capture-camera {
+  position: relative;
+  overflow: hidden;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.capture-camera-icon {
+  width: 6rem;
+  height: 6rem;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #ffffff;
+  box-shadow: 0 16px 35px rgba(37, 99, 235, 0.22);
+}
+
+.capture-camera-icon svg {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.capture-camera-title {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.capture-camera-copy {
+  margin-top: 0.35rem;
+}
+
+#receipt-camera {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.capture-preview {
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid #dbe2ea;
+  border-radius: 1.5rem;
+}
+
+.capture-preview img {
+  display: block;
+  width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+}
+
+.capture-panel {
+  padding: 1rem;
+}
+
+.capture-status-text {
+  color: #0f172a;
+}
+
+.capture-progress-track {
+  height: 0.5rem;
+  overflow: hidden;
+  background: #dbe2ea;
+  border-radius: 999px;
+}
+
+.capture-progress-bar,
+.capture-progress-indeterminate {
+  height: 100%;
+  background: linear-gradient(90deg, #0f766e, #2563eb);
+  border-radius: 999px;
+}
+
+.capture-progress-bar {
+  transition: width 0.2s ease;
+}
+
+.capture-progress-indeterminate {
+  width: 50%;
+  animation: capture-pulse 1.2s ease-in-out infinite;
+}
+
+.capture-actions {
+  margin-top: 0.25rem;
+}
+
+.capture-button {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 0.8rem 1.1rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.capture-button-ghost {
+  background: transparent;
+  color: #475569;
+}
+
+.capture-button-secondary {
+  background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+  color: #ffffff;
+  box-shadow: 0 16px 32px rgba(29, 78, 216, 0.18);
+}
+
+.capture-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@keyframes capture-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateX(-10%);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateX(70%);
+  }
+}
+
+@media (max-width: 640px) {
+  .capture-page .app-navbar {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .capture-page .app-nav a {
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+  }
+
+  .capture-card-body {
+    padding: 1rem;
+  }
+}
