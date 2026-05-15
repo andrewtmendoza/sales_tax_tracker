@@ -1,0 +1,109 @@
+from __future__ import annotations
+
+import json
+from datetime import date
+from decimal import Decimal
+
+import pytest
+from django.test import Client
+
+from receipts.models import Receipt
+
+
+@pytest.fixture
+def client():
+    return Client()
+
+
+@pytest.mark.django_db
+def test_list_receipts_empty(client):
+    response = client.get("/api/receipts/")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.django_db
+def test_create_receipt_returns_201(client):
+    payload = {
+        "file_hash": "c" * 64,
+        "merchant_name": "Target",
+        "transaction_date": "2026-05-01",
+        "total_amount": "42.50",
+        "sales_tax_amount": "3.25",
+    }
+    response = client.post(
+        "/api/receipts/",
+        data=json.dumps(payload),
+        content_type="application/json",
+    )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["file_hash"] == "c" * 64
+    assert body["merchant_name"] == "Target"
+    assert Receipt.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_create_with_duplicate_hash_returns_409(client):
+    Receipt.objects.create(file_hash="d" * 64, merchant_name="Existing")
+    payload = {"file_hash": "d" * 64, "merchant_name": "ShouldBeIgnored"}
+    response = client.post(
+        "/api/receipts/",
+        data=json.dumps(payload),
+        content_type="application/json",
+    )
+    assert response.status_code == 409
+    body = response.json()
+    assert "already exists" in body["detail"].lower()
+    assert body["existing"]["merchant_name"] == "Existing"
+    assert Receipt.objects.count() == 1
+
+
+@pytest.mark.django_db
+def test_get_receipt_detail(client):
+    receipt = Receipt.objects.create(file_hash="e" * 64, merchant_name="Costco")
+    response = client.get(f"/api/receipts/{receipt.id}")
+    assert response.status_code == 200
+    assert response.json()["merchant_name"] == "Costco"
+
+
+@pytest.mark.django_db
+def test_patch_updates_fields(client):
+    receipt = Receipt.objects.create(file_hash="f" * 64, merchant_name="Old")
+    response = client.patch(
+        f"/api/receipts/{receipt.id}",
+        data=json.dumps({"merchant_name": "New", "sales_tax_amount": "5.00"}),
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    receipt.refresh_from_db()
+    assert receipt.merchant_name == "New"
+    assert receipt.sales_tax_amount == Decimal("5.00")
+
+
+@pytest.mark.django_db
+def test_delete_receipt(client):
+    receipt = Receipt.objects.create(file_hash="0" * 64)
+    response = client.delete(f"/api/receipts/{receipt.id}")
+    assert response.status_code == 204
+    assert Receipt.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_ytd_stats_endpoint(client):
+    Receipt.objects.create(
+        file_hash="a" * 64,
+        transaction_date=date(2026, 3, 1),
+        sales_tax_amount=Decimal("4.00"),
+    )
+    Receipt.objects.create(
+        file_hash="b" * 64,
+        transaction_date=date(2026, 4, 1),
+        sales_tax_amount=Decimal("6.00"),
+    )
+    response = client.get("/api/receipts/stats/ytd?year=2026")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["year"] == 2026
+    assert Decimal(body["total_sales_tax"]) == Decimal("10.00")
+    assert body["receipt_count"] == 2
