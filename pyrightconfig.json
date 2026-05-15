@@ -1,0 +1,6 @@
+{
+  "include": ["salt_tracker", "receipts"],
+  "exclude": [".venv", "**/__pycache__"],
+  "venvPath": ".",
+  "venv": ".venv"
+}
