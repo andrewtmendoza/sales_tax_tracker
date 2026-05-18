@@ -48,6 +48,7 @@ Do not expose this app directly to the public internet without understanding the
 2. Pull the latest published image and start the app:
 
 ```bash
+docker pull ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
 docker compose pull
 docker compose up -d
 ```
@@ -147,11 +148,17 @@ ghcr.io/andrewtmendoza/sales_tax_tracker
 
 Tag `v0.1.1` publishes:
 
-- `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.0`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:0`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:latest`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:sha-<shortsha>`
+
+You can inspect the published multi-arch image with:
+
+```bash
+docker buildx imagetools inspect ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
+```
 
 ## Versioning
 
