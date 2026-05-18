@@ -6,13 +6,32 @@ from decimal import Decimal
 
 import pytest
 from django.test import Client
+from django.urls import reverse
 
 from receipts.models import Receipt
 
 
+def _csrf_headers(client: Client) -> dict[str, str]:
+    return {"HTTP_X_CSRFTOKEN": str(client.cookies["csrftoken"].value)}
+
+
 @pytest.fixture
-def client():
+def client(user):
+    client = Client()
+    client.force_login(user)
+    client.get(reverse("receipts:capture"))
+    return client
+
+
+@pytest.fixture
+def anonymous_client():
     return Client()
+
+
+@pytest.mark.django_db
+def test_list_receipts_requires_login(anonymous_client):
+    response = anonymous_client.get("/api/receipts/")
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db
@@ -35,6 +54,7 @@ def test_create_receipt_returns_201(client):
         "/api/receipts/",
         data=json.dumps(payload),
         content_type="application/json",
+        **_csrf_headers(client),
     )
     assert response.status_code == 201
     body = response.json()
@@ -51,6 +71,7 @@ def test_create_with_duplicate_hash_returns_409(client):
         "/api/receipts/",
         data=json.dumps(payload),
         content_type="application/json",
+        **_csrf_headers(client),
     )
     assert response.status_code == 409
     body = response.json()
@@ -74,6 +95,7 @@ def test_patch_updates_fields(client):
         f"/api/receipts/{receipt.id}",
         data=json.dumps({"merchant_name": "New", "sales_tax_amount": "5.00"}),
         content_type="application/json",
+        **_csrf_headers(client),
     )
     assert response.status_code == 200
     receipt.refresh_from_db()
@@ -84,7 +106,7 @@ def test_patch_updates_fields(client):
 @pytest.mark.django_db
 def test_delete_receipt(client):
     receipt = Receipt.objects.create(file_hash="0" * 64)
-    response = client.delete(f"/api/receipts/{receipt.id}")
+    response = client.delete(f"/api/receipts/{receipt.id}", **_csrf_headers(client))
     assert response.status_code == 204
     assert Receipt.objects.count() == 0
 

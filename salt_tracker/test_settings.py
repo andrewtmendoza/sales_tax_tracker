@@ -1,5 +1,8 @@
 from salt_tracker.settings import *  # noqa: F401, F403
 
+SECRET_KEY = "test-secret-key"
+ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

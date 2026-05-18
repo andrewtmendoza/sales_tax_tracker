@@ -153,9 +153,9 @@ body.capture-page {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  background: linear-gradient(135deg, #0c885f, #0f766e);
   color: #ffffff;
-  box-shadow: 0 16px 35px rgba(37, 99, 235, 0.22);
+  box-shadow: 0 16px 35px rgba(12, 136, 95, 0.22);
 }
 
 .capture-camera-icon svg {
@@ -214,7 +214,7 @@ body.capture-page {
 .capture-progress-bar,
 .capture-progress-indeterminate {
   height: 100%;
-  background: linear-gradient(90deg, #0f766e, #2563eb);
+  background: linear-gradient(90deg, #0c885f, #0f766e);
   border-radius: 999px;
 }
 
@@ -247,9 +247,9 @@ body.capture-page {
 }
 
 .capture-button-secondary {
-  background: linear-gradient(135deg, #1d4ed8, #7c3aed);
+  background: linear-gradient(135deg, #0c885f, #0f766e);
   color: #ffffff;
-  box-shadow: 0 16px 32px rgba(29, 78, 216, 0.18);
+  box-shadow: 0 16px 32px rgba(12, 136, 95, 0.18);
 }
 
 .capture-button:disabled {

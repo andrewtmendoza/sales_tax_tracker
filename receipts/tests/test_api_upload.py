@@ -3,18 +3,23 @@ from __future__ import annotations
 import hashlib
 from datetime import date
 from decimal import Decimal
+from typing import Any
 
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, override_settings
+from django.urls import reverse
 
 from receipts.models import Receipt
 from receipts.services import llm
 
 
 @pytest.fixture
-def client():
-    return Client()
+def client(user):
+    client = Client()
+    client.force_login(user)
+    client.get(reverse("receipts:capture"))
+    return client
 
 
 @pytest.fixture
@@ -41,12 +46,24 @@ def stub_llm(mocker):
     )
 
 
-def _upload(client, fake_image, content_type="image/jpeg", **extra):
+def _upload(client, fake_image, content_type="image/jpeg", **extra) -> Any:
     upload = SimpleUploadedFile("receipt.jpg", fake_image, content_type=content_type)
+    headers = {}
+    if "csrftoken" in client.cookies:
+        headers["HTTP_X_CSRFTOKEN"] = str(client.cookies["csrftoken"].value)
     return client.post(
         "/api/receipts/upload",
         data={"image": upload, **extra},
+        **headers,
     )
+
+
+@pytest.mark.django_db
+def test_upload_requires_login(fake_image):
+    client = Client()
+    client.get(reverse("login"))
+    response = _upload(client, fake_image)
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db
@@ -78,7 +95,11 @@ def test_upload_returns_409_on_duplicate(client, fake_image, stub_storage, stub_
 @pytest.mark.django_db
 def test_upload_rejects_non_image(client):
     upload = SimpleUploadedFile("evil.txt", b"not an image at all", content_type="text/plain")
-    response = client.post("/api/receipts/upload", data={"image": upload})
+    response = client.post(
+        "/api/receipts/upload",
+        data={"image": upload},
+        HTTP_X_CSRFTOKEN=str(client.cookies["csrftoken"].value),
+    )
     assert response.status_code == 415
     assert response.json()["detail"] == "Unsupported image type"
 

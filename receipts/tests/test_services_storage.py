@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from io import BytesIO
 from unittest.mock import MagicMock
 
 import pytest
@@ -75,3 +76,21 @@ def test_presigned_url_uses_public_endpoint(settings):
     settings.RUSTFS_PUBLIC_ENDPOINT_URL = "http://browser-visible-rustfs:9000"
     url = storage.presigned_url("receipts/x.jpg")
     assert url.startswith("http://browser-visible-rustfs:9000/receipts/receipts/x.jpg")
+
+
+def test_download_image_reads_bytes_and_content_type():
+    client = MagicMock()
+    client.get_object.return_value = {
+        "Body": BytesIO(b"img-bytes"),
+        "ContentType": "image/jpeg",
+    }
+
+    file_bytes, content_type = storage.download_image(
+        "receipts/x.jpg",
+        client=client,
+        bucket="receipts",
+    )
+
+    assert file_bytes == b"img-bytes"
+    assert content_type == "image/jpeg"
+    client.get_object.assert_called_once_with(Bucket="receipts", Key="receipts/x.jpg")

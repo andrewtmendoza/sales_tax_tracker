@@ -1,0 +1,4 @@
+html[data-theme="light"] {
+  --p: 160 84% 29% !important;
+  --pc: 0 0% 100% !important;
+}

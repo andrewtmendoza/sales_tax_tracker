@@ -1,4 +1,4 @@
-.PHONY: install hooks lint test docker-up
+.PHONY: install hooks lint test docker-up docker-dev
 
 install:
 	uv sync --dev
@@ -14,3 +14,6 @@ test:
 
 docker-up:
 	docker compose up --build
+
+docker-dev:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build

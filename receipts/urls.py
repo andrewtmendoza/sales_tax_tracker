@@ -10,5 +10,11 @@ urlpatterns = [
     path("", views.dashboard, name="dashboard"),
     path("capture/", views.capture, name="capture"),
     path("receipts/<int:receipt_id>/", views.receipt_detail, name="receipt_detail"),
+    path("receipts/<int:receipt_id>/image/", views.receipt_image, name="receipt_image"),
+    path(
+        "receipts/<int:receipt_id>/image/thumbnail/",
+        views.receipt_thumbnail,
+        name="receipt_thumbnail",
+    ),
     path("receipts/<int:receipt_id>/update/", views.receipt_update, name="receipt_update"),
 ]

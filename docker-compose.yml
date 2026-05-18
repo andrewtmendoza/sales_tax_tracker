@@ -65,14 +65,14 @@ services:
         condition: service_healthy
       rustfs:
         condition: service_healthy
+      rustfs-init:
+        condition: service_completed_successfully
     ports:
-      - 8000:8000
-    volumes:
-      - .:/app
-      - /app/.venv
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:8000:8000"
     command: >
       sh -c "python manage.py migrate --noinput &&
-             python manage.py runserver 0.0.0.0:8000"
+             python manage.py collectstatic --noinput &&
+             gunicorn salt_tracker.wsgi:application --bind 0.0.0.0:8000 --workers $${GUNICORN_WORKERS:-2} --access-logfile - --error-logfile -"
 
   tunnel:
     image: cloudflare/cloudflared:latest

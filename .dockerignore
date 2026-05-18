@@ -6,6 +6,9 @@ __pycache__
 .gitignore
 .pytest_cache
 .coverage
+.ruff_cache
+.claude
+.playwright
 staticfiles
 *.sqlite3
 .DS_Store

@@ -95,6 +95,19 @@ document.addEventListener('alpine:init', () => {
       });
     },
 
+    getCookie(name) {
+      const cookies = document.cookie ? document.cookie.split('; ') : [];
+      for (const cookie of cookies) {
+        const [key, ...valueParts] = cookie.split('=');
+        if (key === name) return decodeURIComponent(valueParts.join('='));
+      }
+      return '';
+    },
+
+    csrfToken() {
+      return this.getCookie('csrftoken');
+    },
+
     async handleFile(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -155,6 +168,8 @@ document.addEventListener('alpine:init', () => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/receipts/upload');
         xhr.responseType = 'json';
+        const csrfToken = this.csrfToken();
+        if (csrfToken) xhr.setRequestHeader('X-CSRFToken', csrfToken);
 
         xhr.upload.onprogress = (event) => {
           if (!event.lengthComputable) {
@@ -208,6 +223,10 @@ document.addEventListener('alpine:init', () => {
           const response = await this.uploadRecord(record);
           if (response.status === 201 || response.status === 409) {
             await this.removeRecord(record.hash);
+          } else if (response.status === 401 || response.status === 403) {
+            this.resetUploadState();
+            this.status = 'Sign in again to resume syncing queued receipts.';
+            break;
           } else {
             this.resetUploadState();
             this.status = `Sync paused: server returned ${response.status}.`;

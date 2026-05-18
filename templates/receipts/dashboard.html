@@ -1,6 +1,14 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Dashboard · Sales Tax Tracker{% endblock %}
+
+{% block base_styles %}
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
+<link rel="preconnect" href="https://cdn.tailwindcss.com" />
+<link rel="stylesheet" href="{% static 'receipts/dashboard.css' %}" />
+<script src="https://cdn.tailwindcss.com"></script>
+{% endblock %}
 
 {% block content %}
 <div class="grid gap-5">
@@ -21,7 +29,7 @@
     </div>
   </div>
 
-  <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(460px,0.9fr)]">
+  <div class="dashboard-layout grid gap-5">
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -81,12 +89,12 @@
       </div>
     </div>
 
-    <aside id="receipt-review" class="min-h-[420px]">
+    <aside id="receipt-review" class="receipt-review-panel">
       {% if selected_receipt %}
-        {% include "receipts/_receipt_detail.html" with receipt=selected_receipt image_url=selected_image_url saved=selected_saved %}
+        {% include "receipts/_receipt_detail.html" with receipt=selected_receipt image_url=selected_image_url full_image_url=selected_full_image_url saved=selected_saved %}
       {% else %}
         <div class="card bg-base-100 shadow-xl">
-          <div class="card-body items-center justify-center text-center min-h-[420px]">
+          <div class="card-body receipt-review-empty items-center justify-center text-center">
             <h2 class="card-title">Nothing to review yet</h2>
             <p class="opacity-70">Captured receipts will appear here for side-by-side review.</p>
           </div>

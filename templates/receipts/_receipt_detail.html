@@ -2,8 +2,16 @@
   <div class="card-body">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <h2 class="card-title">Review receipt #{{ receipt.id }}</h2>
-        <p class="text-sm opacity-70">{{ receipt.file_hash|truncatechars:18 }}</p>
+        <h2 class="card-title">{{ receipt.merchant_name|default:"Receipt pending review" }}</h2>
+        <p class="text-sm opacity-70">
+          {% if receipt.transaction_date or receipt.total_amount or receipt.sales_tax_amount %}
+            {% if receipt.transaction_date %}{{ receipt.transaction_date|date:"F j, Y" }}{% endif %}
+            {% if receipt.total_amount %}{% if receipt.transaction_date %} · {% endif %}Total ${{ receipt.total_amount }}{% endif %}
+            {% if receipt.sales_tax_amount %}{% if receipt.transaction_date or receipt.total_amount %} · {% endif %}Tax ${{ receipt.sales_tax_amount }}{% endif %}
+          {% else %}
+            Captured {{ receipt.created_at|date:"F j, Y" }}
+          {% endif %}
+        </p>
       </div>
       {% if saved %}<div class="badge badge-success">saved</div>{% endif %}
     </div>
@@ -11,8 +19,15 @@
     <div class="grid gap-4 lg:grid-cols-2">
       <div class="rounded-3xl border border-base-300 bg-base-200 p-3">
         {% if image_url %}
-          <img src="{{ image_url }}" alt="Receipt image" class="max-h-[60vh] w-full rounded-2xl object-contain" />
-          <p class="mt-3 text-xs opacity-60">Receipt preview may be unavailable while offline.</p>
+          <div class="receipt-preview-frame flex justify-center overflow-hidden rounded-2xl">
+            <img src="{{ image_url }}" alt="Receipt image" loading="eager" decoding="async" class="receipt-preview-image block w-full rounded-2xl object-contain" />
+          </div>
+          <div class="mt-3 space-y-2 text-xs opacity-70">
+            <p class="leading-relaxed">Receipt preview may be unavailable while offline.</p>
+            {% if full_image_url %}
+              <a href="{{ full_image_url }}" target="_blank" rel="noreferrer" class="link link-hover inline-flex w-fit">View full resolution</a>
+            {% endif %}
+          </div>
         {% elif receipt.rustfs_path %}
           <div class="flex min-h-64 items-center justify-center rounded-2xl bg-base-300 p-6 text-center text-sm opacity-70">Image stored at {{ receipt.rustfs_path }} but preview is unavailable.</div>
         {% else %}

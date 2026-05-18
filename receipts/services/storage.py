@@ -78,3 +78,15 @@ def presigned_url(
         Params={"Bucket": bucket, "Key": key},
         ExpiresIn=expires_in,
     ))
+
+
+def download_image(
+    key: str,
+    *,
+    client=None,
+    bucket: str | None = None,
+) -> tuple[bytes, str]:
+    client = client or get_client()
+    bucket = bucket or str(settings.RUSTFS_BUCKET)
+    response = client.get_object(Bucket=bucket, Key=key)
+    return response["Body"].read(), str(response.get("ContentType") or "application/octet-stream")
