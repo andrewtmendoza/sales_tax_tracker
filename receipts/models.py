@@ -40,4 +40,5 @@ class Receipt(models.Model):
         result = cls.objects.filter(transaction_date__year=target_year).aggregate(
             total=Sum("sales_tax_amount")
         )
-        return result["total"] or Decimal("0.00")
+        total = result["total"] or Decimal("0.00")
+        return total.quantize(Decimal("0.01"))

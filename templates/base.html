@@ -42,9 +42,9 @@
           <li><a href="{% url 'receipts:capture' %}">Capture</a></li>
           {% if request.user.is_authenticated %}
             <li>
-              <form method="post" action="{% url 'logout' %}">
+              <form method="post" action="{% url 'logout' %}" class="app-nav-form">
                 {% csrf_token %}
-                <button type="submit">Log out</button>
+                <button type="submit" class="app-nav-button">Log out</button>
               </form>
             </li>
           {% else %}

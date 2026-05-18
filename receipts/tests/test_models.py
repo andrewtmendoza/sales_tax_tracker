@@ -53,3 +53,24 @@ def test_ytd_sales_tax_sums_only_target_year():
 def test_ytd_excludes_receipts_without_transaction_date():
     Receipt.objects.create(file_hash="9" * 64, sales_tax_amount=Decimal("50.00"))
     assert Receipt.ytd_sales_tax(2026) == Decimal("0.00")
+
+
+@pytest.mark.django_db
+def test_ytd_sales_tax_quantizes_decimal_sum_to_cents():
+    Receipt.objects.create(
+        file_hash="4" * 64,
+        transaction_date=date(2026, 4, 18),
+        sales_tax_amount=Decimal("4.26"),
+    )
+    Receipt.objects.create(
+        file_hash="5" * 64,
+        transaction_date=date(2026, 4, 12),
+        sales_tax_amount=Decimal("9.66"),
+    )
+    Receipt.objects.create(
+        file_hash="6" * 64,
+        transaction_date=date(2026, 4, 8),
+        sales_tax_amount=Decimal("2.96"),
+    )
+
+    assert Receipt.ytd_sales_tax(2026) == Decimal("16.88")

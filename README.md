@@ -12,6 +12,16 @@ This project is intended for personal use. It supports mobile receipt capture, o
 - Extract merchant, date, total, and sales tax through an OpenAI-compatible Responses endpoint
 - Review and correct receipt metadata in a Django dashboard
 
+## Screenshots
+
+### Mobile Capture
+
+![Mobile capture screen](docs/screenshots/capture-mobile.png)
+
+### Desktop Dashboard
+
+![Desktop dashboard](docs/screenshots/dashboard-desktop.png)
+
 ## Deployment Model
 
 - Use Docker Compose for normal deployment

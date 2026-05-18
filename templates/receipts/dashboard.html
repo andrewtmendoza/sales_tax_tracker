@@ -19,7 +19,7 @@
   <div class="stats shadow w-full bg-base-100">
     <div class="stat">
       <div class="stat-title">YTD Sales Tax ({{ year }})</div>
-      <div class="stat-value text-primary">${{ ytd_total }}</div>
+      <div class="stat-value text-primary">${{ ytd_total|floatformat:2 }}</div>
       <div class="stat-desc">Aggregated from reviewed receipt metadata</div>
     </div>
     <div class="stat hidden md:grid">
