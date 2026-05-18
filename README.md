@@ -1,0 +1,114 @@
+# Sales Tax Tracker
+
+Private self-hosted receipt capture and review app for tracking year-to-date sales tax from photographed receipts.
+
+This project is intended for personal use. It supports mobile receipt capture, offline queueing on the capture screen, server-side image storage, and receipt field extraction through an OpenAI-compatible Responses API.
+
+## What It Does
+
+- Capture receipt photos from a phone-friendly web UI
+- Queue captures locally when the phone is offline
+- Upload receipt images to RustFS/S3-compatible storage
+- Extract merchant, date, total, and sales tax through an OpenAI-compatible Responses endpoint
+- Review and correct receipt metadata in a Django dashboard
+
+## Deployment Model
+
+- Use Docker Compose for normal deployment
+- Use Django login for app authentication
+- You can still put the app behind a reverse proxy
+- Default web binding is `127.0.0.1:8000` so it is not exposed directly by default
+
+Do not expose this app directly to the public internet without understanding the security implications.
+
+## Quick Start
+
+1. Copy `.env.example` to `.env` and fill in real values.
+2. Start the app:
+
+```bash
+docker compose up --build
+```
+
+3. Create a Django user in a second terminal:
+
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+
+4. Open `http://127.0.0.1:8000/accounts/login/` and sign in.
+
+## Required Configuration
+
+The app will refuse to start unless these are configured:
+
+- `DJANGO_SECRET_KEY`
+- `DJANGO_ALLOWED_HOSTS`
+- `RECEIPT_LLM_RESPONSES_URL`
+- `RECEIPT_LLM_API_KEY`
+- `RECEIPT_LLM_MODEL`
+
+OpenAI example:
+
+```env
+RECEIPT_LLM_RESPONSES_URL=https://api.openai.com/v1/responses
+RECEIPT_LLM_API_KEY=sk-...
+RECEIPT_LLM_MODEL=gpt-4.1-mini
+```
+
+## Reverse Proxy Notes
+
+- Keep the container bound to loopback unless a trusted reverse proxy fronts it.
+- Make sure the proxy forwards the correct `Host` header.
+- Add your public hostname to `DJANGO_ALLOWED_HOSTS`.
+- If your browser origin differs from Django's effective origin, add it to `DJANGO_CSRF_TRUSTED_ORIGINS`.
+
+## Development
+
+Install dependencies locally:
+
+```bash
+uv sync --dev
+```
+
+Run tests:
+
+```bash
+uv run pytest
+```
+
+Run hooks:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+Use the development compose override for live code mounts and Django `runserver`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+## Backups
+
+Back up Postgres:
+
+```bash
+docker compose exec db pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup.sql
+```
+
+Back up RustFS data:
+
+```bash
+docker run --rm -v sales_tax_tracker_rustfs_data:/from -v "$PWD":/to alpine sh -c "cd /from && tar czf /to/rustfs-backup.tgz ."
+```
+
+## Privacy
+
+- Receipt images are stored in your configured object storage.
+- Raw model responses are stored in the database.
+- When LLM extraction is enabled, receipt image data is sent to your configured model endpoint.
+
+## Tax Disclaimer
+
+This project helps organize receipt data. It does not provide tax, legal, or accounting advice.
