@@ -11,7 +11,7 @@ dependencies = [
     "pillow>=10.4",
     "psycopg[binary]>=3.2",
     "python-dotenv>=1.0",
-    "requests>=2.32",
+    "requests>=2.34.2",
     "whitenoise>=6.9",
 ]
 
