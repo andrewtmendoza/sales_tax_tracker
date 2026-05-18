@@ -39,6 +39,7 @@ This project is intended for personal use. It supports mobile receipt capture, o
 - You can still put the app behind a reverse proxy
 - Default web binding is `127.0.0.1:8000` so it is not exposed directly by default
 - The default Compose file uses the latest published GHCR image
+- Day-to-day work and dependency updates land on `develop` before release PRs move them to `main`
 
 Do not expose this app directly to the public internet without understanding the security implications.
 
@@ -120,22 +121,30 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 `docker-compose.yml` is the reference deployment configuration. `docker-compose.dev.yml` adds the local image build, bind mounts, and Django `runserver` for development.
 
+Git branch flow:
+
+- Feature, fix, docs, and dependency PRs target `develop`
+- Release PRs target `main`
+- Only `main` is tagged for releases
+
 ## Releases
 
 Manual releases are driven by signed Git tags and publish multi-arch images to GitHub Container Registry.
 
 Release flow:
 
-1. Bump `version` in `pyproject.toml`.
-2. Merge the version bump to `main`.
-3. Create a signed tag that matches the version exactly:
+1. Merge day-to-day work into `develop`.
+2. Open a release PR from `develop` to `main`.
+3. Bump `version` in `pyproject.toml` in that release PR.
+4. Merge the release PR to `main`.
+5. Create a signed tag that matches the version exactly:
 
 ```bash
 git tag -s v0.1.1 -m "v0.1.1"
 git push origin v0.1.1
 ```
 
-4. GitHub Actions will:
+6. GitHub Actions will:
 - verify the tag matches `pyproject.toml`
 - build and push `linux/amd64` and `linux/arm64` images to GHCR
 - create a GitHub Release with generated release notes
@@ -163,6 +172,7 @@ docker buildx imagetools inspect ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
 ## Versioning
 
 - Pull requests targeting `main` must bump `pyproject.toml`.
+- Pull requests targeting `develop` do not require a version bump.
 - The release tag must match `pyproject.toml` exactly, using `vX.Y.Z`.
 - Example: `version = "0.1.0"` requires the tag `v0.1.0`.
 

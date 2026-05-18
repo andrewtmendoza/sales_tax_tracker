@@ -135,14 +135,16 @@ def _dashboard_receipt_url(receipt_id: int, *, saved: bool = False) -> str:
 def _image_url(receipt: Receipt) -> str:
     if not receipt.rustfs_path:
         return ""
-    assert receipt.pk is not None
+    if receipt.pk is None:
+        return ""
     return reverse("receipts:receipt_image", args=[receipt.pk])
 
 
 def _thumbnail_url(receipt: Receipt) -> str:
     if not receipt.rustfs_path:
         return ""
-    assert receipt.pk is not None
+    if receipt.pk is None:
+        return ""
     return reverse("receipts:receipt_thumbnail", args=[receipt.pk])
 
 

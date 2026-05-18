@@ -31,10 +31,20 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config > /dev/nul
 
 ## Branch And Release Conventions
 
-- Use short-lived branches from `main`, for example `feature/offline-polish`, `fix/upload-errors`, or `docs/release-notes`.
-- Pull requests targeting `main` must bump `version` in `pyproject.toml`.
+- Use short-lived branches from `develop`, for example `feature/offline-polish`, `fix/upload-errors`, or `docs/release-notes`.
+- Pull requests targeting `develop` are the normal path for features, fixes, docs, and dependency updates.
+- Pull requests targeting `main` are reserved for releases and must bump `version` in `pyproject.toml`.
 - Release tags must match the version exactly in `vX.Y.Z` form.
 - Pushing a matching release tag publishes a multi-arch GHCR image and creates a GitHub Release with generated notes.
+
+Suggested flow:
+
+1. Branch from `develop`
+2. Open a PR back to `develop`
+3. When `develop` is ready, open a release PR from `develop` to `main`
+4. Bump `pyproject.toml` in the release PR
+5. Merge the release PR
+6. Push the signed release tag from `main`
 
 Example release:
 
