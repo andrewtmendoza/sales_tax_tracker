@@ -38,6 +38,12 @@ docker compose exec web python manage.py createsuperuser
 
 4. Open `http://127.0.0.1:8000/accounts/login/` and sign in.
 
+5. Confirm the app is healthy:
+
+```bash
+curl http://127.0.0.1:8000/health/
+```
+
 ## Required Configuration
 
 The app will refuse to start unless these are configured:
@@ -89,6 +95,20 @@ Use the development compose override for live code mounts and Django `runserver`
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
+## Health Check
+
+The app exposes a lightweight health endpoint at `/health/` for Docker and reverse proxy monitoring:
+
+```bash
+curl http://127.0.0.1:8000/health/
+```
+
+Expected response:
+
+```json
+{"status": "ok"}
+```
+
 ## Backups
 
 Back up Postgres:
@@ -112,3 +132,9 @@ docker run --rm -v sales_tax_tracker_rustfs_data:/from -v "$PWD":/to alpine sh -
 ## Tax Disclaimer
 
 This project helps organize receipt data. It does not provide tax, legal, or accounting advice.
+
+## Repository Hygiene
+
+- CI runs GitHub Actions for hooks, tests, and Docker builds.
+- See `SECURITY.md` for security reporting and deployment expectations.
+- See `CONTRIBUTING.md` for development workflow details.

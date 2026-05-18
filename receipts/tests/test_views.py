@@ -392,6 +392,12 @@ def test_service_worker_route(client):
     assert "if (url.pathname === '/') return caches.match('/')" not in content
 
 
+def test_health_route_is_public(anonymous_client):
+    response = anonymous_client.get(reverse("health"))
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 def test_capture_script_contains_required_offline_primitives(client):
     content = (settings.BASE_DIR / "static" / "receipts" / "capture.js").read_text()
     assert "OFFLINE_CORE_ASSETS" in content
