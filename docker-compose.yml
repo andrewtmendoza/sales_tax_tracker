@@ -54,9 +54,7 @@ services:
 
   web:
     <<: *env_file
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ${WEB_IMAGE:-ghcr.io/andrewtmendoza/sales_tax_tracker:latest}
     restart: unless-stopped
     environment:
       POSTGRES_HOST: db

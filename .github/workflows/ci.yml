@@ -6,13 +6,60 @@ on:
       - main
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
+  version-bump:
+    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify pyproject version bump
+        run: |
+          git fetch origin main --depth=1
+          python - <<'PY'
+          import re
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          def read_version(pyproject_text: str) -> tuple[tuple[int, int, int], str]:
+              version = tomllib.loads(pyproject_text)["project"]["version"]
+              if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+                  raise SystemExit(f"Expected semantic version X.Y.Z in pyproject.toml, got {version!r}")
+              return tuple(int(part) for part in version.split(".")), version
+
+          base_text = subprocess.check_output(
+              ["git", "show", "origin/main:pyproject.toml"],
+              text=True,
+          )
+          head_text = Path("pyproject.toml").read_text()
+          base_version, base_label = read_version(base_text)
+          head_version, head_label = read_version(head_text)
+
+          if head_version <= base_version:
+              raise SystemExit(
+                  "pyproject.toml version must be bumped for PRs to main. "
+                  f"Base={base_label}, head={head_label}"
+              )
+
+          print(f"Version bump check passed: {base_label} -> {head_label}")
+          PY
+
   checks:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -27,6 +74,12 @@ jobs:
       - name: Sync dependencies
         run: uv sync --dev
 
+      - name: Validate Compose files
+        run: |
+          cp .env.example .env
+          docker compose config > /dev/null
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml config > /dev/null
+
       - name: Run pre-commit hooks
         run: uv run pre-commit run --all-files
 
@@ -34,4 +87,4 @@ jobs:
         run: uv run pytest
 
       - name: Build Docker image
-        run: docker compose build
+        run: docker build .

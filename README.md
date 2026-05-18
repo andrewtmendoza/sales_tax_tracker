@@ -38,16 +38,18 @@ This project is intended for personal use. It supports mobile receipt capture, o
 - Use Django login for app authentication
 - You can still put the app behind a reverse proxy
 - Default web binding is `127.0.0.1:8000` so it is not exposed directly by default
+- The default Compose file uses the latest published GHCR image
 
 Do not expose this app directly to the public internet without understanding the security implications.
 
 ## Quick Start
 
 1. Copy `.env.example` to `.env` and fill in real values.
-2. Start the app:
+2. Pull the latest published image and start the app:
 
 ```bash
-docker compose up --build
+docker compose pull
+docker compose up -d
 ```
 
 3. Create a Django user in a second terminal:
@@ -114,6 +116,48 @@ Use the development compose override for live code mounts and Django `runserver`
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
+
+`docker-compose.yml` is the reference deployment configuration. `docker-compose.dev.yml` adds the local image build, bind mounts, and Django `runserver` for development.
+
+## Releases
+
+Manual releases are driven by signed Git tags and publish multi-arch images to GitHub Container Registry.
+
+Release flow:
+
+1. Bump `version` in `pyproject.toml`.
+2. Merge the version bump to `main`.
+3. Create a signed tag that matches the version exactly:
+
+```bash
+git tag -s v0.1.0 -m "v0.1.0"
+git push origin v0.1.0
+```
+
+4. GitHub Actions will:
+- verify the tag matches `pyproject.toml`
+- build and push `linux/amd64` and `linux/arm64` images to GHCR
+- create a GitHub Release with generated release notes
+
+Published image:
+
+```text
+ghcr.io/andrewtmendoza/sales_tax_tracker
+```
+
+Tag `v0.1.0` publishes:
+
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.0`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:0`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:latest`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:sha-<shortsha>`
+
+## Versioning
+
+- Pull requests targeting `main` must bump `pyproject.toml`.
+- The release tag must match `pyproject.toml` exactly, using `vX.Y.Z`.
+- Example: `version = "0.1.0"` requires the tag `v0.1.0`.
 
 ## Health Check
 

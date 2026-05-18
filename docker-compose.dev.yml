@@ -1,5 +1,9 @@
 services:
   web:
+    image: sales_tax_tracker-web:dev
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       DJANGO_DEBUG: "true"
     volumes:

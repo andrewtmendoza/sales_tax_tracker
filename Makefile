@@ -13,7 +13,7 @@ test:
 	uv run pytest
 
 docker-up:
-	docker compose up --build
+	docker compose pull && docker compose up -d
 
 docker-dev:
 	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
