@@ -17,7 +17,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "model-bakery>=1.20",
+    "model-bakery>=1.23.4",
     "pre-commit>=3",
     "pytest>=8",
     "pytest-django>=4.9",
