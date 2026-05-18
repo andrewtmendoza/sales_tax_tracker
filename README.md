@@ -130,8 +130,8 @@ Release flow:
 3. Create a signed tag that matches the version exactly:
 
 ```bash
-git tag -s v0.1.0 -m "v0.1.0"
-git push origin v0.1.0
+git tag -s v0.1.1 -m "v0.1.1"
+git push origin v0.1.1
 ```
 
 4. GitHub Actions will:
@@ -145,7 +145,7 @@ Published image:
 ghcr.io/andrewtmendoza/sales_tax_tracker
 ```
 
-Tag `v0.1.0` publishes:
+Tag `v0.1.1` publishes:
 
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.0`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1`

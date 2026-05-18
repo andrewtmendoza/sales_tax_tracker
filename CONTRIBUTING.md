@@ -39,8 +39,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config > /dev/nul
 Example release:
 
 ```bash
-git tag -s v0.1.0 -m "v0.1.0"
-git push origin v0.1.0
+git tag -s v0.1.1 -m "v0.1.1"
+git push origin v0.1.1
 ```
 
 ## Project Scope
