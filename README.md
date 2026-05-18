@@ -12,6 +12,16 @@ This project is intended for personal use. It supports mobile receipt capture, o
 - Extract merchant, date, total, and sales tax through an OpenAI-compatible Responses endpoint
 - Review and correct receipt metadata in a Django dashboard
 
+## Tech Stack
+
+- Backend: Django 5.1, Django Ninja
+- Frontend: Django templates, HTMX, Alpine.js, Tailwind CSS, DaisyUI
+- Data: PostgreSQL
+- Object storage: RustFS / S3-compatible storage
+- Receipt extraction: OpenAI-compatible Responses API
+- Runtime: Docker Compose, Gunicorn, WhiteNoise
+- Tooling: uv, pytest, Ruff, pre-commit, GitHub Actions
+
 ## Screenshots
 
 ### Mobile Capture
