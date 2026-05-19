@@ -91,7 +91,19 @@ RECEIPT_LLM_MODEL=gpt-4.1-mini
 - Keep the container bound to loopback unless a trusted reverse proxy fronts it.
 - Make sure the proxy forwards the correct `Host` header.
 - Add your public hostname to `DJANGO_ALLOWED_HOSTS`.
-- If your browser origin differs from Django's effective origin, add it to `DJANGO_CSRF_TRUSTED_ORIGINS`.
+- If your reverse proxy terminates TLS, set `DJANGO_TRUST_X_FORWARDED_PROTO=true` so Django treats forwarded HTTPS requests as secure.
+- Set `DJANGO_SESSION_COOKIE_SECURE=true` and `DJANGO_CSRF_COOKIE_SECURE=true` for HTTPS deployments behind Traefik or another trusted proxy.
+- Add your public `https://...` origin to `DJANGO_CSRF_TRUSTED_ORIGINS`.
+
+Traefik-style example:
+
+```env
+DJANGO_ALLOWED_HOSTS=receipts.example.com
+DJANGO_TRUST_X_FORWARDED_PROTO=true
+DJANGO_SESSION_COOKIE_SECURE=true
+DJANGO_CSRF_COOKIE_SECURE=true
+DJANGO_CSRF_TRUSTED_ORIGINS=https://receipts.example.com
+```
 
 ## Development
 
