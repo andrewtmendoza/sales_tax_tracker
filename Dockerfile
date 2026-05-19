@@ -22,4 +22,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["gunicorn", "salt_tracker.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["gunicorn", "sales_tax_tracker.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-", "--error-logfile", "-"]

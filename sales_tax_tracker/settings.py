@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
-RUNNING_TESTS = os.getenv("DJANGO_SETTINGS_MODULE") == "salt_tracker.test_settings"
+RUNNING_TESTS = os.getenv("DJANGO_SETTINGS_MODULE") == "sales_tax_tracker.test_settings"
 
 
 def env_bool(key: str, default: bool = False) -> bool:
@@ -46,7 +46,7 @@ MIDDLEWARE = [
     "django_htmx.middleware.HtmxMiddleware",
 ]
 
-ROOT_URLCONF = "salt_tracker.urls"
+ROOT_URLCONF = "sales_tax_tracker.urls"
 
 TEMPLATES = [
     {
@@ -63,13 +63,13 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "salt_tracker.wsgi.application"
-ASGI_APPLICATION = "salt_tracker.asgi.application"
+WSGI_APPLICATION = "sales_tax_tracker.wsgi.application"
+ASGI_APPLICATION = "sales_tax_tracker.asgi.application"
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "salt_tracker"),
+        "NAME": os.getenv("POSTGRES_DB", "sales_tax_tracker"),
         "USER": os.getenv("POSTGRES_USER", "salt"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "salt"),
         "HOST": os.getenv("POSTGRES_HOST", "localhost"),

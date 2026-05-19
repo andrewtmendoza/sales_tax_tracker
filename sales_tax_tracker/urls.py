@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import include, path
 
-from salt_tracker import views
-from salt_tracker.api import api
+from sales_tax_tracker import views
+from sales_tax_tracker.api import api
 
 urlpatterns = [
     path("admin/", admin.site.urls),
