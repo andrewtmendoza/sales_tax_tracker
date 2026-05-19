@@ -123,8 +123,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 Git branch flow:
 
-- Feature, fix, docs, and dependency PRs target `develop`
-- Release PRs target `main`
+- Feature, fix, docs, and dependency PRs target `develop` and normally use squash merge
+- Release PRs target `main` and use merge commits
+- Post-release sync PRs merge `main` back into `develop` with merge commits
 - Only `main` is tagged for releases
 
 ## Releases
@@ -136,11 +137,11 @@ Release flow:
 1. Merge day-to-day work into `develop`.
 2. Open a release PR from `develop` to `main`.
 3. Bump `version` in `pyproject.toml` in that release PR.
-4. Merge the release PR to `main`.
+4. Merge the release PR to `main` with a merge commit so release ancestry stays visible.
 5. If repository auto-merge is enabled, you can opt a release PR into automatic merge after checks pass:
 
 ```bash
-gh pr merge --squash --auto --delete-branch
+gh pr merge --merge --auto --delete-branch
 ```
 
 6. Create a signed tag that matches the version exactly:
@@ -158,7 +159,11 @@ If GitHub email privacy is enabled, create the signed tag with your GitHub norep
 - verify the published multi-arch image can be inspected from GHCR
 - create a GitHub Release with generated release notes
 
-8. Sync `main` back into `develop` so future work starts from the released version.
+8. Sync `main` back into `develop` with a merge commit so `develop` retains the released ancestry for future comparisons.
+
+```bash
+gh pr merge --merge --auto --delete-branch
+```
 
 Published image:
 
