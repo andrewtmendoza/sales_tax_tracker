@@ -49,7 +49,7 @@ Do not expose this app directly to the public internet without understanding the
 2. Pull the latest published image and start the app:
 
 ```bash
-docker pull ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
+docker pull ghcr.io/andrewtmendoza/sales_tax_tracker:latest
 docker compose pull
 docker compose up -d
 ```
@@ -137,17 +137,28 @@ Release flow:
 2. Open a release PR from `develop` to `main`.
 3. Bump `version` in `pyproject.toml` in that release PR.
 4. Merge the release PR to `main`.
-5. Create a signed tag that matches the version exactly:
+5. If repository auto-merge is enabled, you can opt a release PR into automatic merge after checks pass:
 
 ```bash
-git tag -s v0.1.1 -m "v0.1.1"
-git push origin v0.1.1
+gh pr merge --squash --auto --delete-branch
 ```
 
-6. GitHub Actions will:
+6. Create a signed tag that matches the version exactly:
+
+```bash
+git tag -s vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+If GitHub email privacy is enabled, create the signed tag with your GitHub noreply email as the tagger.
+
+7. GitHub Actions will:
 - verify the tag matches `pyproject.toml`
 - build and push `linux/amd64` and `linux/arm64` images to GHCR
+- verify the published multi-arch image can be inspected from GHCR
 - create a GitHub Release with generated release notes
+
+8. Sync `main` back into `develop` so future work starts from the released version.
 
 Published image:
 
@@ -155,18 +166,18 @@ Published image:
 ghcr.io/andrewtmendoza/sales_tax_tracker
 ```
 
-Tag `v0.1.1` publishes:
+Tag `vX.Y.Z` publishes:
 
-- `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1`
-- `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1`
-- `ghcr.io/andrewtmendoza/sales_tax_tracker:0`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y.Z`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:X`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:latest`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:sha-<shortsha>`
 
 You can inspect the published multi-arch image with:
 
 ```bash
-docker buildx imagetools inspect ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
+docker buildx imagetools inspect ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y.Z
 ```
 
 ## Versioning

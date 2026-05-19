@@ -43,15 +43,18 @@ Suggested flow:
 2. Open a PR back to `develop`
 3. When `develop` is ready, open a release PR from `develop` to `main`
 4. Bump `pyproject.toml` in the release PR
-5. Merge the release PR
+5. Merge the release PR. If repository auto-merge is enabled, you can opt the PR into it with `gh pr merge --squash --auto --delete-branch`.
 6. Push the signed release tag from `main`
+7. Sync `main` back into `develop`
 
 Example release:
 
 ```bash
-git tag -s v0.1.1 -m "v0.1.1"
-git push origin v0.1.1
+git tag -s vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
 ```
+
+If GitHub email privacy is enabled, make sure the signed tag uses your GitHub noreply email as the tagger.
 
 ## Project Scope
 
