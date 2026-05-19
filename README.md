@@ -49,7 +49,11 @@ Do not expose this app directly to the public internet without understanding the
 2. Pull the latest published image and start the app:
 
 ```bash
+<<<<<<< HEAD
+docker pull ghcr.io/andrewtmendoza/sales_tax_tracker:latest
+=======
 docker pull ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
+>>>>>>> origin/main
 docker compose pull
 docker compose up -d
 ```
@@ -91,7 +95,19 @@ RECEIPT_LLM_MODEL=gpt-4.1-mini
 - Keep the container bound to loopback unless a trusted reverse proxy fronts it.
 - Make sure the proxy forwards the correct `Host` header.
 - Add your public hostname to `DJANGO_ALLOWED_HOSTS`.
-- If your browser origin differs from Django's effective origin, add it to `DJANGO_CSRF_TRUSTED_ORIGINS`.
+- If your reverse proxy terminates TLS, set `DJANGO_TRUST_X_FORWARDED_PROTO=true` so Django treats forwarded HTTPS requests as secure.
+- Set `DJANGO_SESSION_COOKIE_SECURE=true` and `DJANGO_CSRF_COOKIE_SECURE=true` for HTTPS deployments behind Traefik or another trusted proxy.
+- Add your public `https://...` origin to `DJANGO_CSRF_TRUSTED_ORIGINS`.
+
+Traefik-style example:
+
+```env
+DJANGO_ALLOWED_HOSTS=receipts.example.com
+DJANGO_TRUST_X_FORWARDED_PROTO=true
+DJANGO_SESSION_COOKIE_SECURE=true
+DJANGO_CSRF_COOKIE_SECURE=true
+DJANGO_CSRF_TRUSTED_ORIGINS=https://receipts.example.com
+```
 
 ## Development
 
@@ -123,8 +139,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 Git branch flow:
 
-- Feature, fix, docs, and dependency PRs target `develop`
-- Release PRs target `main`
+- Feature, fix, docs, and dependency PRs target `develop` and normally use squash merge
+- Release PRs target `main` and use merge commits
+- Post-release sync PRs merge `main` back into `develop` with merge commits
 - Only `main` is tagged for releases
 
 ## Releases
@@ -136,18 +153,33 @@ Release flow:
 1. Merge day-to-day work into `develop`.
 2. Open a release PR from `develop` to `main`.
 3. Bump `version` in `pyproject.toml` in that release PR.
-4. Merge the release PR to `main`.
-5. Create a signed tag that matches the version exactly:
+4. Merge the release PR to `main` with a merge commit so release ancestry stays visible.
+5. If repository auto-merge is enabled, you can opt a release PR into automatic merge after checks pass:
 
 ```bash
-git tag -s v0.1.1 -m "v0.1.1"
-git push origin v0.1.1
+gh pr merge --merge --auto --delete-branch
 ```
 
-6. GitHub Actions will:
+6. Create a signed tag that matches the version exactly:
+
+```bash
+git tag -s vX.Y.Z -m "vX.Y.Z"
+git push origin vX.Y.Z
+```
+
+If GitHub email privacy is enabled, create the signed tag with your GitHub noreply email as the tagger.
+
+7. GitHub Actions will:
 - verify the tag matches `pyproject.toml`
 - build and push `linux/amd64` and `linux/arm64` images to GHCR
+- verify the published multi-arch image can be inspected from GHCR
 - create a GitHub Release with generated release notes
+
+8. Sync `main` back into `develop` with a merge commit so `develop` retains the released ancestry for future comparisons.
+
+```bash
+gh pr merge --merge --auto --delete-branch
+```
 
 Published image:
 
@@ -155,18 +187,28 @@ Published image:
 ghcr.io/andrewtmendoza/sales_tax_tracker
 ```
 
-Tag `v0.1.1` publishes:
+Tag `vX.Y.Z` publishes:
 
+<<<<<<< HEAD
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y.Z`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:X`
+=======
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:0`
+>>>>>>> origin/main
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:latest`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:sha-<shortsha>`
 
 You can inspect the published multi-arch image with:
 
 ```bash
+<<<<<<< HEAD
+docker buildx imagetools inspect ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y.Z
+=======
 docker buildx imagetools inspect ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
+>>>>>>> origin/main
 ```
 
 ## Versioning

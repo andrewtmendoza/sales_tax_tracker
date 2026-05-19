@@ -76,7 +76,7 @@ services:
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py collectstatic --noinput &&
-             gunicorn salt_tracker.wsgi:application --bind 0.0.0.0:8000 --workers $${GUNICORN_WORKERS:-2} --access-logfile - --error-logfile -"
+             gunicorn sales_tax_tracker.wsgi:application --bind 0.0.0.0:8000 --workers $${GUNICORN_WORKERS:-2} --access-logfile - --error-logfile -"
 
   tunnel:
     image: cloudflare/cloudflared:latest

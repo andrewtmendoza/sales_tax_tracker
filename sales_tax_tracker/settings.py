@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
-RUNNING_TESTS = os.getenv("DJANGO_SETTINGS_MODULE") == "salt_tracker.test_settings"
+RUNNING_TESTS = os.getenv("DJANGO_SETTINGS_MODULE") == "sales_tax_tracker.test_settings"
 
 
 def env_bool(key: str, default: bool = False) -> bool:
@@ -22,6 +22,13 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
 DEBUG = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https")
+    if env_bool("DJANGO_TRUST_X_FORWARDED_PROTO", False)
+    else None
+)
+SESSION_COOKIE_SECURE = env_bool("DJANGO_SESSION_COOKIE_SECURE", False)
+CSRF_COOKIE_SECURE = env_bool("DJANGO_CSRF_COOKIE_SECURE", False)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -46,7 +53,7 @@ MIDDLEWARE = [
     "django_htmx.middleware.HtmxMiddleware",
 ]
 
-ROOT_URLCONF = "salt_tracker.urls"
+ROOT_URLCONF = "sales_tax_tracker.urls"
 
 TEMPLATES = [
     {
@@ -63,13 +70,13 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "salt_tracker.wsgi.application"
-ASGI_APPLICATION = "salt_tracker.asgi.application"
+WSGI_APPLICATION = "sales_tax_tracker.wsgi.application"
+ASGI_APPLICATION = "sales_tax_tracker.asgi.application"
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "salt_tracker"),
+        "NAME": os.getenv("POSTGRES_DB", "sales_tax_tracker"),
         "USER": os.getenv("POSTGRES_USER", "salt"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD", "salt"),
         "HOST": os.getenv("POSTGRES_HOST", "localhost"),

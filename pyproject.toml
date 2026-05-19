@@ -1,6 +1,6 @@
 [project]
 name = "sales-tax-tracker"
-version = "0.1.4"
+version = "0.1.5"
 requires-python = ">=3.12"
 dependencies = [
     "boto3>=1.43.10",
@@ -36,5 +36,5 @@ select = ["E", "F", "I", "B", "UP", "S"]
 [tool.ruff.lint.per-file-ignores]
 "conftest.py" = ["S106"]
 "receipts/tests/*.py" = ["S101"]
-"salt_tracker/settings.py" = ["S105"]
-"salt_tracker/test_settings.py" = ["S105"]
+"sales_tax_tracker/settings.py" = ["S105"]
+"sales_tax_tracker/test_settings.py" = ["S105"]
