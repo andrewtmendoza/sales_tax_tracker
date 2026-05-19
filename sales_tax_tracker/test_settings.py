@@ -1,4 +1,4 @@
-from salt_tracker.settings import *  # noqa: F401, F403
+from sales_tax_tracker.settings import *  # noqa: F401, F403
 
 SECRET_KEY = "test-secret-key"
 ALLOWED_HOSTS = ["testserver", "localhost", "127.0.0.1"]
