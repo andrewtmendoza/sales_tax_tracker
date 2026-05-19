@@ -49,7 +49,11 @@ Do not expose this app directly to the public internet without understanding the
 2. Pull the latest published image and start the app:
 
 ```bash
+<<<<<<< HEAD
 docker pull ghcr.io/andrewtmendoza/sales_tax_tracker:latest
+=======
+docker pull ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
+>>>>>>> origin/main
 docker compose pull
 docker compose up -d
 ```
@@ -185,16 +189,26 @@ ghcr.io/andrewtmendoza/sales_tax_tracker
 
 Tag `vX.Y.Z` publishes:
 
+<<<<<<< HEAD
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y.Z`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:X`
+=======
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:0.1`
+- `ghcr.io/andrewtmendoza/sales_tax_tracker:0`
+>>>>>>> origin/main
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:latest`
 - `ghcr.io/andrewtmendoza/sales_tax_tracker:sha-<shortsha>`
 
 You can inspect the published multi-arch image with:
 
 ```bash
+<<<<<<< HEAD
 docker buildx imagetools inspect ghcr.io/andrewtmendoza/sales_tax_tracker:X.Y.Z
+=======
+docker buildx imagetools inspect ghcr.io/andrewtmendoza/sales_tax_tracker:0.1.1
+>>>>>>> origin/main
 ```
 
 ## Versioning
