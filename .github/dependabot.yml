@@ -11,6 +11,10 @@ updates:
     target-branch: develop
     schedule:
       interval: weekly
+    ignore:
+      - dependency-name: django
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: docker
     directory: /
