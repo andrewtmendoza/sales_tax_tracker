@@ -32,8 +32,10 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml config > /dev/nul
 ## Branch And Release Conventions
 
 - Use short-lived branches from `develop`, for example `feature/offline-polish`, `fix/upload-errors`, or `docs/release-notes`.
-- Pull requests targeting `develop` are the normal path for features, fixes, docs, and dependency updates.
+- Pull requests targeting `develop` are the normal path for features, fixes, docs, and dependency updates. These normally use squash merge.
 - Pull requests targeting `main` are reserved for releases and must bump `version` in `pyproject.toml`.
+- Release PRs into `main` use merge commits.
+- Post-release sync PRs from `main` back into `develop` use merge commits.
 - Release tags must match the version exactly in `vX.Y.Z` form.
 - Pushing a matching release tag publishes a multi-arch GHCR image and creates a GitHub Release with generated notes.
 
@@ -43,9 +45,9 @@ Suggested flow:
 2. Open a PR back to `develop`
 3. When `develop` is ready, open a release PR from `develop` to `main`
 4. Bump `pyproject.toml` in the release PR
-5. Merge the release PR. If repository auto-merge is enabled, you can opt the PR into it with `gh pr merge --squash --auto --delete-branch`.
+5. Merge the release PR with a merge commit. If repository auto-merge is enabled, you can opt the PR into it with `gh pr merge --merge --auto --delete-branch`.
 6. Push the signed release tag from `main`
-7. Sync `main` back into `develop`
+7. Sync `main` back into `develop` with a merge commit, for example `gh pr merge --merge --auto --delete-branch`
 
 Example release:
 
