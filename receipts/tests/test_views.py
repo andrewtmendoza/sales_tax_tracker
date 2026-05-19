@@ -40,7 +40,7 @@ def test_dashboard_renders(client):
     assert b"Sales Tax Tracker" in response.content
     assert b"calc(env(safe-area-inset-top) + 0.75rem)" in response.content
     assert b"receipts/dashboard.css" in response.content
-    assert b"cdn.tailwindcss.com" in response.content
+    assert b'<script src="https://cdn.tailwindcss.com"></script>' in response.content
     assert b"theme.css" in response.content
 
 
