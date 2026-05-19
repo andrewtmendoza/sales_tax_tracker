@@ -79,6 +79,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      - name: Verify published release image
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          docker buildx imagetools inspect "ghcr.io/${{ github.repository }}:${version}"
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
