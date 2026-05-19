@@ -5,18 +5,41 @@ updates:
     target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: pip
     directory: /
     target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      python-runtime-dependencies:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      python-dev-dependencies:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: django
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: docker
     directory: /
     target-branch: develop
     schedule:
       interval: weekly
+    groups:
+      docker-images:
+        patterns:
+          - "*"
     ignore:
       - dependency-name: python
         update-types:
