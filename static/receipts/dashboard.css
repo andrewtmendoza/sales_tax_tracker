@@ -1,6 +1,7 @@
 .dashboard-layout {
   display: grid;
   gap: 1.25rem;
+  align-items: start;
 }
 
 .dashboard-status,
@@ -19,6 +20,15 @@
 }
 
 .dashboard-table-wrap {
+  min-width: 0;
+}
+
+.dashboard-list-card,
+.dashboard-list-body,
+.dashboard-table,
+.dashboard-row,
+.dashboard-merchant-link,
+.dashboard-review-link {
   min-width: 0;
 }
 
@@ -107,6 +117,75 @@
   object-fit: contain;
 }
 
+@media (min-width: 768px) {
+  .dashboard-list-body {
+    padding: 1.5rem;
+  }
+
+  .dashboard-table th,
+  .dashboard-table td {
+    padding-top: 0.95rem;
+    padding-bottom: 0.95rem;
+  }
+
+  .dashboard-row {
+    position: relative;
+    transition: background-color 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .dashboard-row:hover {
+    background: #f8fafc;
+  }
+
+  .dashboard-row-selected {
+    background: #eefaf4;
+    box-shadow: inset 4px 0 0 #0c885f;
+  }
+
+  .dashboard-row-selected td {
+    background: transparent;
+  }
+
+  .dashboard-row-selected .dashboard-merchant-link {
+    color: #0c885f;
+  }
+
+  .dashboard-merchant-link {
+    text-underline-offset: 0.2em;
+  }
+
+  .dashboard-review-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 5.5rem;
+    min-height: 2rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #0f172a;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+  }
+
+  .dashboard-review-link:hover,
+  .dashboard-review-link:focus-visible {
+    border-color: #0c885f;
+    background: #eefaf4;
+    color: #0c885f;
+    outline: none;
+  }
+
+  .dashboard-row-selected .dashboard-review-link {
+    border-color: #8fd0b5;
+    background: #ffffff;
+  }
+}
+
 @media (max-width: 767px) {
   .receipt-review-panel {
     min-height: auto;
@@ -119,6 +198,6 @@
 
 @media (min-width: 1280px) {
   .dashboard-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(460px, 0.9fr);
+    grid-template-columns: minmax(0, 0.96fr) minmax(420px, 0.84fr);
   }
 }

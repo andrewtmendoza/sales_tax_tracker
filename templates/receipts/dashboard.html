@@ -32,8 +32,8 @@
   </div>
 
   <div class="dashboard-layout grid gap-5">
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
+    <div class="dashboard-list-card card bg-base-100 shadow-xl">
+      <div class="dashboard-list-body card-body">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="dashboard-section-copy">
             <h2 class="card-title">Receipts</h2>
@@ -74,7 +74,7 @@
         </div>
 
         <div class="dashboard-table-wrap hidden md:block overflow-x-auto">
-          <table class="table table-zebra">
+          <table class="dashboard-table table table-zebra">
             <thead>
               <tr>
                 <th>Date</th>
@@ -86,10 +86,10 @@
             </thead>
             <tbody>
               {% for r in receipts %}
-              <tr class="hover" id="receipt-row-{{ r.id }}">
+              <tr class="dashboard-row{% if selected_receipt and selected_receipt.id == r.id %} dashboard-row-selected{% endif %}" id="receipt-row-{{ r.id }}">
                 <td>{{ r.transaction_date|default:"—" }}</td>
                 <td>
-                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="link link-hover font-semibold"
+                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="dashboard-merchant-link link link-hover font-semibold"
                           hx-get="{% url 'receipts:receipt_detail' r.id %}"
                           hx-target="#receipt-review"
                           hx-swap="innerHTML">
@@ -100,7 +100,7 @@
                 <td class="text-right">{{ r.total_amount|default:"—" }}</td>
                 <td class="text-right">{{ r.sales_tax_amount|default:"—" }}</td>
                 <td class="text-right">
-                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="btn btn-ghost btn-xs"
+                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="dashboard-review-link"
                           hx-get="{% url 'receipts:receipt_detail' r.id %}"
                           hx-target="#receipt-review"
                           hx-swap="innerHTML">
