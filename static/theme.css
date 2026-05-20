@@ -2,3 +2,227 @@ html[data-theme="light"] {
   --p: 160 84% 29% !important;
   --pc: 0 0% 100% !important;
 }
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+.app-navbar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(100%, 80rem);
+  min-height: 4rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+}
+
+.app-brand {
+  min-width: 0;
+  color: #111827;
+  font-size: clamp(1.25rem, 2.8vw, 1.75rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-decoration: none;
+}
+
+.app-nav-desktop {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.app-nav-form {
+  display: block;
+  margin: 0;
+}
+
+.app-nav-link,
+.app-nav-button {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.95rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #111827;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.app-nav-link:hover,
+.app-nav-link:focus-visible,
+.app-nav-button:hover,
+.app-nav-button:focus-visible {
+  background: #f3f4f6;
+  outline: none;
+}
+
+.app-nav-link.is-active,
+.app-menu-link.is-active {
+  background: #e6f6ef;
+  color: #0c885f;
+}
+
+.app-menu {
+  position: relative;
+  flex: none;
+  display: none;
+}
+
+.app-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.app-menu-toggle {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid #dbe2ea;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1;
+  list-style: none;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.app-menu-label-open {
+  display: none;
+}
+
+.app-menu-chevron {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.1rem) rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+.app-menu-toggle:focus-visible {
+  outline: 2px solid #0c885f;
+  outline-offset: 2px;
+}
+
+.app-menu[open] .app-menu-toggle {
+  background: #f8fafc;
+}
+
+.app-menu[open] .app-menu-label-closed {
+  display: none;
+}
+
+.app-menu[open] .app-menu-label-open {
+  display: inline;
+}
+
+.app-menu[open] .app-menu-chevron {
+  transform: translateY(0.08rem) rotate(-135deg);
+}
+
+.app-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  width: min(18rem, calc(100vw - 2rem));
+  margin: 0;
+  padding: 0.5rem;
+  border: 1px solid #dbe2ea;
+  border-radius: 1rem;
+  background: #ffffff;
+  list-style: none;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
+  z-index: 60;
+}
+
+.app-menu-panel li + li {
+  margin-top: 0.25rem;
+}
+
+.app-menu-form {
+  display: block;
+  margin: 0;
+}
+
+.app-menu-link,
+.app-menu-button {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.75rem 0.9rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: transparent;
+  color: #111827;
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.app-menu-link:hover,
+.app-menu-link:focus-visible,
+.app-menu-button:hover,
+.app-menu-button:focus-visible {
+  background: #f3f4f6;
+  outline: none;
+}
+
+.app-main {
+  overflow-x: clip;
+}
+
+@media (min-width: 641px) {
+  .app-menu-panel {
+    min-width: 16rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-nav-desktop {
+    display: none;
+  }
+
+  .app-menu {
+    display: block;
+  }
+
+  .app-navbar {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .app-brand {
+    max-width: calc(100% - 6.5rem);
+    font-size: 1.125rem;
+  }
+
+  .app-menu-panel {
+    width: min(16rem, calc(100vw - 1.5rem));
+  }
+}
