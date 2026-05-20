@@ -31,29 +31,48 @@
   {% endblock %}
 </head>
 <body class="{% block body_class %}min-h-screen bg-base-200{% endblock %}">
-  <div class="app-header sticky top-0 z-50 bg-base-100 shadow" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem);">
-    <div class="app-navbar navbar min-h-16 px-3 sm:px-4">
-      <div class="flex-1 min-w-0">
-        <a href="{% url 'receipts:dashboard' %}" class="app-brand btn btn-ghost truncate text-xl sm:text-2xl">Sales Tax Tracker</a>
-      </div>
-      <div class="flex-none">
-        <ul class="app-nav menu menu-horizontal px-0 sm:px-1">
-          <li><a href="{% url 'receipts:dashboard' %}">Dashboard</a></li>
-          <li><a href="{% url 'receipts:capture' %}">Capture</a></li>
+  {% with current_url_name=request.resolver_match.url_name %}
+  <div class="app-header" style="padding-top: calc(env(safe-area-inset-top) + 0.75rem);">
+    <div class="app-navbar px-3 sm:px-4">
+      <a href="{% url 'receipts:dashboard' %}" class="app-brand">Sales Tax Tracker</a>
+
+      <nav class="app-nav-desktop" aria-label="Primary">
+        <a href="{% url 'receipts:dashboard' %}" class="app-nav-link{% if current_url_name == 'dashboard' %} is-active{% endif %}"{% if current_url_name == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+        <a href="{% url 'receipts:capture' %}" class="app-nav-link{% if current_url_name == 'capture' %} is-active{% endif %}"{% if current_url_name == 'capture' %} aria-current="page"{% endif %}>Capture</a>
+        {% if request.user.is_authenticated %}
+          <form method="post" action="{% url 'logout' %}" class="app-nav-form">
+            {% csrf_token %}
+            <button type="submit" class="app-nav-link app-nav-button">Log out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'login' %}" class="app-nav-link">Log in</a>
+        {% endif %}
+      </nav>
+
+      <details class="app-menu">
+        <summary class="app-menu-toggle">
+          <span class="app-menu-label app-menu-label-closed">Menu</span>
+          <span class="app-menu-label app-menu-label-open">Close</span>
+          <span class="app-menu-chevron" aria-hidden="true"></span>
+        </summary>
+        <ul class="app-menu-panel" role="list">
+          <li><a href="{% url 'receipts:dashboard' %}" class="app-menu-link{% if current_url_name == 'dashboard' %} is-active{% endif %}"{% if current_url_name == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a></li>
+          <li><a href="{% url 'receipts:capture' %}" class="app-menu-link{% if current_url_name == 'capture' %} is-active{% endif %}"{% if current_url_name == 'capture' %} aria-current="page"{% endif %}>Capture</a></li>
           {% if request.user.is_authenticated %}
             <li>
-              <form method="post" action="{% url 'logout' %}" class="app-nav-form">
+              <form method="post" action="{% url 'logout' %}" class="app-menu-form">
                 {% csrf_token %}
-                <button type="submit" class="app-nav-button">Log out</button>
+                <button type="submit" class="app-menu-link app-menu-button">Log out</button>
               </form>
             </li>
           {% else %}
-            <li><a href="{% url 'login' %}">Log in</a></li>
+            <li><a href="{% url 'login' %}" class="app-menu-link">Log in</a></li>
           {% endif %}
         </ul>
-      </div>
+      </details>
     </div>
   </div>
+  {% endwith %}
 
   <main class="app-main container mx-auto p-4">
     {% block content %}{% endblock %}

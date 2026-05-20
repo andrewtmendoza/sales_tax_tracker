@@ -3,6 +3,8 @@
 
 {% block title %}Dashboard · Sales Tax Tracker{% endblock %}
 
+{% block body_class %}dashboard-page min-h-screen bg-base-200{% endblock %}
+
 {% block base_styles %}
 <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
 <link rel="preconnect" href="https://cdn.tailwindcss.com" />
@@ -12,8 +14,8 @@
 
 {% block content %}
 <div class="grid gap-5">
-  <div id="dashboard-connection-state" class="rounded-2xl bg-base-100 px-4 py-3 text-sm opacity-70" role="status" aria-live="polite">
-    Dashboard review works best online. Offline, this page stays read-only while capture continues to queue receipts.
+  <div id="dashboard-connection-state" class="dashboard-status rounded-2xl bg-base-100 px-4 py-3 text-sm opacity-70" role="status" aria-live="polite" hidden>
+    Offline: dashboard review is read-only. Open Capture to keep collecting receipts until you reconnect.
   </div>
 
   <div class="stats shadow w-full bg-base-100">
@@ -30,10 +32,10 @@
   </div>
 
   <div class="dashboard-layout grid gap-5">
-    <div class="card bg-base-100 shadow-xl">
-      <div class="card-body">
+    <div class="dashboard-list-card card bg-base-100 shadow-xl">
+      <div class="dashboard-list-body card-body">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
+          <div class="dashboard-section-copy">
             <h2 class="card-title">Receipts</h2>
             <p class="text-sm opacity-70">Select a receipt to review the captured image and edit its tax details.</p>
           </div>
@@ -41,8 +43,38 @@
         </div>
 
         {% if receipts %}
-        <div class="overflow-x-auto">
-          <table class="table table-zebra">
+        <div class="dashboard-mobile-list md:hidden">
+          {% for r in receipts %}
+          <article class="dashboard-mobile-card{% if selected_receipt and selected_receipt.id == r.id %} dashboard-mobile-card-selected{% endif %}">
+            <div class="dashboard-mobile-card-head">
+              <div>
+                <h3 class="dashboard-mobile-merchant">{{ r.merchant_name|default:"Unknown" }}</h3>
+                <p class="dashboard-mobile-date">{{ r.transaction_date|default:"—" }}</p>
+              </div>
+              {% if r.processing_error %}<div class="badge badge-warning badge-sm">needs review</div>{% endif %}
+            </div>
+            <dl class="dashboard-mobile-metrics">
+              <div>
+                <dt>Total</dt>
+                <dd>{{ r.total_amount|default:"—" }}</dd>
+              </div>
+              <div>
+                <dt>Sales Tax</dt>
+                <dd>{{ r.sales_tax_amount|default:"—" }}</dd>
+              </div>
+            </dl>
+            <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="btn btn-primary btn-sm"
+                    hx-get="{% url 'receipts:receipt_detail' r.id %}"
+                    hx-target="#receipt-review"
+                    hx-swap="innerHTML">
+              Review receipt
+            </a>
+          </article>
+          {% endfor %}
+        </div>
+
+        <div class="dashboard-table-wrap hidden md:block overflow-x-auto">
+          <table class="dashboard-table table table-zebra">
             <thead>
               <tr>
                 <th>Date</th>
@@ -54,10 +86,10 @@
             </thead>
             <tbody>
               {% for r in receipts %}
-              <tr class="hover" id="receipt-row-{{ r.id }}">
+              <tr class="dashboard-row{% if selected_receipt and selected_receipt.id == r.id %} dashboard-row-selected{% endif %}" id="receipt-row-{{ r.id }}">
                 <td>{{ r.transaction_date|default:"—" }}</td>
                 <td>
-                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="link link-hover font-semibold"
+                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="dashboard-merchant-link link link-hover font-semibold"
                           hx-get="{% url 'receipts:receipt_detail' r.id %}"
                           hx-target="#receipt-review"
                           hx-swap="innerHTML">
@@ -68,7 +100,7 @@
                 <td class="text-right">{{ r.total_amount|default:"—" }}</td>
                 <td class="text-right">{{ r.sales_tax_amount|default:"—" }}</td>
                 <td class="text-right">
-                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="btn btn-ghost btn-xs"
+                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="dashboard-review-link"
                           hx-get="{% url 'receipts:receipt_detail' r.id %}"
                           hx-target="#receipt-review"
                           hx-swap="innerHTML">
@@ -111,9 +143,12 @@
     const updateDashboardConnectionState = () => {
       const status = document.getElementById('dashboard-connection-state');
       if (!status) return;
-      status.textContent = navigator.onLine
-        ? 'Dashboard review works best online. Offline, this page stays read-only while capture continues to queue receipts.'
-        : 'Offline: dashboard review is read-only. Open Capture to keep collecting receipts until you reconnect.';
+      if (navigator.onLine) {
+        status.hidden = true;
+        return;
+      }
+      status.hidden = false;
+      status.textContent = 'Offline: dashboard review is read-only. Open Capture to keep collecting receipts until you reconnect.';
     };
     updateDashboardConnectionState();
     window.addEventListener('online', updateDashboardConnectionState);
