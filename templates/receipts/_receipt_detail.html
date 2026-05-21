@@ -1,9 +1,9 @@
-<div class="card bg-base-100 shadow-xl">
-  <div class="card-body">
-    <div class="flex items-start justify-between gap-3">
+<div class="surface-card receipt-detail-card">
+  <div class="surface-body receipt-detail-body">
+    <div class="receipt-detail-header">
       <div>
-        <h2 class="card-title">{{ receipt.merchant_name|default:"Receipt pending review" }}</h2>
-        <p class="text-sm opacity-70">
+        <h2 class="section-title section-title-compact">{{ receipt.merchant_name|default:"Receipt pending review" }}</h2>
+        <p class="receipt-detail-meta muted-copy">
           {% if receipt.transaction_date or receipt.total_amount or receipt.sales_tax_amount %}
             {% if receipt.transaction_date %}{{ receipt.transaction_date|date:"F j, Y" }}{% endif %}
             {% if receipt.total_amount %}{% if receipt.transaction_date %} · {% endif %}Total ${{ receipt.total_amount }}{% endif %}
@@ -13,59 +13,59 @@
           {% endif %}
         </p>
       </div>
-      {% if saved %}<div class="badge badge-success">saved</div>{% endif %}
+      {% if saved %}<div class="app-badge app-badge-success">saved</div>{% endif %}
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-2">
-      <div class="rounded-3xl border border-base-300 bg-base-200 p-3">
+    <div class="receipt-detail-grid">
+      <div class="receipt-preview-surface">
         {% if image_url %}
-          <div class="receipt-preview-frame flex justify-center overflow-hidden rounded-2xl">
-            <img src="{{ image_url }}" alt="Receipt image" loading="eager" decoding="async" class="receipt-preview-image block w-full rounded-2xl object-contain" />
+          <div class="receipt-preview-frame">
+            <img src="{{ image_url }}" alt="Receipt image" loading="eager" decoding="async" class="receipt-preview-image" />
           </div>
-          <div class="mt-3 space-y-2 text-xs opacity-70">
-            <p class="leading-relaxed">Receipt preview may be unavailable while offline.</p>
+          <div class="receipt-preview-copy muted-copy-small">
+            <p class="receipt-preview-note">Receipt preview may be unavailable while offline.</p>
             {% if full_image_url %}
-              <a href="{{ full_image_url }}" target="_blank" rel="noreferrer" class="link link-hover inline-flex w-fit">View full resolution</a>
+              <a href="{{ full_image_url }}" target="_blank" rel="noreferrer" class="receipt-preview-link">View full resolution</a>
             {% endif %}
           </div>
         {% elif receipt.rustfs_path %}
-          <div class="flex min-h-64 items-center justify-center rounded-2xl bg-base-300 p-6 text-center text-sm opacity-70">Image stored at {{ receipt.rustfs_path }} but preview is unavailable.</div>
+          <div class="receipt-preview-empty muted-copy">Image stored at {{ receipt.rustfs_path }} but preview is unavailable.</div>
         {% else %}
-          <div class="flex min-h-64 items-center justify-center rounded-2xl bg-base-300 p-6 text-center text-sm opacity-70">No receipt image path stored yet.</div>
+          <div class="receipt-preview-empty muted-copy">No receipt image path stored yet.</div>
         {% endif %}
       </div>
 
-      <form class="grid gap-3" method="post" action="{% url 'receipts:receipt_update' receipt.id %}"
+      <form class="stack-form receipt-detail-form" method="post" action="{% url 'receipts:receipt_update' receipt.id %}"
             hx-post="{% url 'receipts:receipt_update' receipt.id %}"
             hx-target="#receipt-review"
             hx-swap="innerHTML">
         {% csrf_token %}
 
-        <label class="form-control">
-          <div class="label"><span class="label-text">Merchant</span></div>
-          <input type="text" name="merchant_name" value="{{ receipt.merchant_name }}" class="input input-bordered" />
+        <label class="field">
+          <span class="field-label">Merchant</span>
+          <input type="text" name="merchant_name" value="{{ receipt.merchant_name }}" class="field-input" />
         </label>
 
-        <label class="form-control">
-          <div class="label"><span class="label-text">Transaction date</span></div>
-          <input type="date" name="transaction_date" value="{{ receipt.transaction_date|date:'Y-m-d' }}" class="input input-bordered" />
+        <label class="field">
+          <span class="field-label">Transaction date</span>
+          <input type="date" name="transaction_date" value="{{ receipt.transaction_date|date:'Y-m-d' }}" class="field-input" />
         </label>
 
-        <label class="form-control">
-          <div class="label"><span class="label-text">Total amount</span></div>
-          <input type="number" step="0.01" min="0" name="total_amount" value="{{ receipt.total_amount|default:'' }}" class="input input-bordered" />
+        <label class="field">
+          <span class="field-label">Total amount</span>
+          <input type="number" step="0.01" min="0" name="total_amount" value="{{ receipt.total_amount|default:'' }}" class="field-input" />
         </label>
 
-        <label class="form-control">
-          <div class="label"><span class="label-text">Sales tax amount</span></div>
-          <input type="number" step="0.01" min="0" name="sales_tax_amount" value="{{ receipt.sales_tax_amount|default:'' }}" class="input input-bordered" />
+        <label class="field">
+          <span class="field-label">Sales tax amount</span>
+          <input type="number" step="0.01" min="0" name="sales_tax_amount" value="{{ receipt.sales_tax_amount|default:'' }}" class="field-input" />
         </label>
 
         {% if receipt.processing_error %}
-          <div class="alert alert-warning text-sm">Extraction needs review: {{ receipt.processing_error|truncatechars:120 }}</div>
+          <div class="app-alert app-alert-warning">Extraction needs review: {{ receipt.processing_error|truncatechars:120 }}</div>
         {% endif %}
 
-        <button type="submit" class="btn btn-primary">Save metadata</button>
+        <button type="submit" class="app-button app-button-primary">Save metadata</button>
       </form>
     </div>
   </div>
