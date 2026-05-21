@@ -40,7 +40,7 @@ def test_dashboard_renders(client):
     assert b"Sales Tax Tracker" in response.content
     assert b"calc(env(safe-area-inset-top) + 0.75rem)" in response.content
     assert b"receipts/dashboard.css" in response.content
-    assert b'<script src="https://cdn.tailwindcss.com"></script>' in response.content
+    assert b"cdn.tailwindcss.com" not in response.content
     assert b"theme.css" in response.content
 
 
@@ -73,9 +73,11 @@ def test_dashboard_table_links_load_receipt_detail_with_htmx(client):
     content = response.content.decode()
     assert "YTD Sales Tax (2026)" in content
     assert "Costco" in content
-    assert f'href="{reverse("receipts:dashboard")}?receipt={receipt.id}#receipt-review"' in content
     assert f"hx-get=\"{reverse('receipts:receipt_detail', args=[receipt.id])}\"" in content
     assert 'hx-target="#receipt-review"' in content
+    expected_push_url = f'{reverse("receipts:dashboard")}?receipt={receipt.id}#receipt-review'
+    assert f'hx-push-url="{expected_push_url}"' in content
+    assert 'dashboard-row-clickable' in content
 
 
 @pytest.mark.django_db
@@ -347,7 +349,7 @@ def test_capture_page_contains_ios_camera_and_offline_sync_assets(client):
     assert 'id="receipt-library"' not in content
     assert "Choose from photo roll" not in content
     assert 'class="hidden"' not in content
-    assert 'opacity-0' in content
+    assert 'class="capture-camera-input"' in content
     assert "file-input" not in content
     assert "receiptCapture" in content
     assert "receipts/capture.js" in content
@@ -414,6 +416,5 @@ def test_capture_script_contains_required_offline_primitives(client):
 
 def test_capture_styles_use_emerald_theme_accents():
     content = (settings.BASE_DIR / "static" / "receipts" / "capture.css").read_text()
-    assert "linear-gradient(135deg, #0c885f, #0f766e)" in content
-    assert "linear-gradient(90deg, #0c885f, #0f766e)" in content
+    assert "background: var(--color-accent-strong);" in content
     assert "#7c3aed" not in content
