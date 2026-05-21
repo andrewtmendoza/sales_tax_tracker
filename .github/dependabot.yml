@@ -21,11 +21,19 @@ updates:
         update-types:
           - minor
           - patch
+      python-runtime-major-dependencies:
+        dependency-type: production
+        update-types:
+          - major
       python-dev-dependencies:
         dependency-type: development
         update-types:
           - minor
           - patch
+      python-dev-major-dependencies:
+        dependency-type: development
+        update-types:
+          - major
     ignore:
       - dependency-name: django
         update-types:
