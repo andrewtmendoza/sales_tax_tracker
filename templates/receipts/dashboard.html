@@ -3,47 +3,41 @@
 
 {% block title %}Dashboard · Sales Tax Tracker{% endblock %}
 
-{% block body_class %}dashboard-page min-h-screen bg-base-200{% endblock %}
+{% block body_class %}app-body dashboard-page{% endblock %}
 
-{% block base_styles %}
-<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
-<link rel="preconnect" href="https://cdn.tailwindcss.com" />
-<link rel="stylesheet" href="{% static 'receipts/dashboard.css' %}" />
-<script src="https://cdn.tailwindcss.com"></script>
-{% endblock %}
+{% block base_styles %}<link rel="stylesheet" href="{% static 'receipts/dashboard.css' %}" />{% endblock %}
 
 {% block content %}
-<div class="grid gap-5">
-  <div id="dashboard-connection-state" class="dashboard-status rounded-2xl bg-base-100 px-4 py-3 text-sm opacity-70" role="status" aria-live="polite" hidden>
+<div class="dashboard-shell">
+  <div id="dashboard-connection-state" class="dashboard-status muted-copy" role="status" aria-live="polite" hidden>
     Offline: dashboard review is read-only. Open Capture to keep collecting receipts until you reconnect.
   </div>
 
-  <div class="stats shadow w-full bg-base-100">
-    <div class="stat">
-      <div class="stat-title">YTD Sales Tax ({{ year }})</div>
-      <div class="stat-value text-primary">${{ ytd_total|floatformat:2 }}</div>
-      <div class="stat-desc">Aggregated from reviewed receipt metadata</div>
+  <section class="dashboard-summary" aria-label="Year-to-date summary">
+    <div class="dashboard-summary-card">
+      <div class="dashboard-summary-label">YTD Sales Tax ({{ year }})</div>
+      <div class="dashboard-summary-value">${{ ytd_total|floatformat:2 }}</div>
+      <div class="dashboard-summary-note">Aggregated from reviewed receipt metadata</div>
     </div>
-    <div class="stat hidden md:grid">
-      <div class="stat-title">Recent receipts</div>
-      <div class="stat-value">{{ receipts|length }}</div>
-      <div class="stat-desc">Click any row to review</div>
+    <div class="dashboard-summary-card dashboard-summary-card-secondary">
+      <div class="dashboard-summary-label">Recent receipts</div>
+      <div class="dashboard-summary-value">{{ receipts|length }}</div>
+      <div class="dashboard-summary-note">Click any row to review</div>
     </div>
-  </div>
+  </section>
 
-  <div class="dashboard-layout grid gap-5">
-    <div class="dashboard-list-card card bg-base-100 shadow-xl">
-      <div class="dashboard-list-body card-body">
-        <div class="flex flex-wrap items-center justify-between gap-3">
+  <div class="dashboard-layout">
+    <section class="surface-card dashboard-list-card">
+      <div class="surface-body dashboard-list-body">
+        <div class="dashboard-toolbar">
           <div class="dashboard-section-copy">
-            <h2 class="card-title">Receipts</h2>
-            <p class="text-sm opacity-70">Select a receipt to review the captured image and edit its tax details.</p>
+            <h2 class="section-title section-title-compact">Receipts</h2>
+            <p class="section-note muted-copy">Select a receipt to review the captured image and edit its tax details.</p>
           </div>
-          <a href="{% url 'receipts:capture' %}" class="btn btn-primary btn-sm">Capture more</a>
         </div>
 
         {% if receipts %}
-        <div class="dashboard-mobile-list md:hidden">
+        <div class="dashboard-mobile-list dashboard-mobile-only">
           {% for r in receipts %}
           <article class="dashboard-mobile-card{% if selected_receipt and selected_receipt.id == r.id %} dashboard-mobile-card-selected{% endif %}">
             <div class="dashboard-mobile-card-head">
@@ -51,7 +45,7 @@
                 <h3 class="dashboard-mobile-merchant">{{ r.merchant_name|default:"Unknown" }}</h3>
                 <p class="dashboard-mobile-date">{{ r.transaction_date|default:"—" }}</p>
               </div>
-              {% if r.processing_error %}<div class="badge badge-warning badge-sm">needs review</div>{% endif %}
+              {% if r.processing_error %}<div class="app-badge app-badge-warning">needs review</div>{% endif %}
             </div>
             <dl class="dashboard-mobile-metrics">
               <div>
@@ -63,7 +57,7 @@
                 <dd>{{ r.sales_tax_amount|default:"—" }}</dd>
               </div>
             </dl>
-            <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="btn btn-primary btn-sm"
+            <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="app-button app-button-primary app-button-compact"
                     hx-get="{% url 'receipts:receipt_detail' r.id %}"
                     hx-target="#receipt-review"
                     hx-swap="innerHTML">
@@ -73,62 +67,63 @@
           {% endfor %}
         </div>
 
-        <div class="dashboard-table-wrap hidden md:block overflow-x-auto">
-          <table class="dashboard-table table table-zebra">
+        <div class="dashboard-table-wrap dashboard-desktop-only">
+          <table class="dashboard-table">
+            <colgroup>
+              <col class="dashboard-col-date" />
+              <col class="dashboard-col-merchant" />
+              <col class="dashboard-col-amount" />
+              <col class="dashboard-col-tax" />
+            </colgroup>
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Merchant</th>
-                <th class="text-right">Total</th>
-                <th class="text-right">Sales Tax</th>
-                <th></th>
+                <th class="dashboard-table-date">Date</th>
+                <th class="dashboard-table-merchant">Merchant</th>
+                <th class="dashboard-table-number dashboard-table-amount">Total</th>
+                <th class="dashboard-table-number dashboard-table-tax">Sales Tax</th>
               </tr>
             </thead>
             <tbody>
               {% for r in receipts %}
-              <tr class="dashboard-row{% if selected_receipt and selected_receipt.id == r.id %} dashboard-row-selected{% endif %}" id="receipt-row-{{ r.id }}">
-                <td>{{ r.transaction_date|default:"—" }}</td>
-                <td>
-                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="dashboard-merchant-link link link-hover font-semibold"
-                          hx-get="{% url 'receipts:receipt_detail' r.id %}"
-                          hx-target="#receipt-review"
-                          hx-swap="innerHTML">
+              <tr class="dashboard-row dashboard-row-clickable{% if selected_receipt and selected_receipt.id == r.id %} dashboard-row-selected{% endif %}"
+                  id="receipt-row-{{ r.id }}"
+                  tabindex="0"
+                  aria-label="Review receipt from {{ r.merchant_name|default:'Unknown merchant' }}"
+                  hx-get="{% url 'receipts:receipt_detail' r.id %}"
+                  hx-target="#receipt-review"
+                  hx-swap="innerHTML"
+                  hx-push-url="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review">
+                <td class="dashboard-table-date">{{ r.transaction_date|default:"—" }}</td>
+                <td class="dashboard-table-merchant">
+                  <span class="dashboard-merchant-link">
                     {{ r.merchant_name|default:"Unknown" }}
-                  </a>
-                  {% if r.processing_error %}<div class="badge badge-warning badge-sm mt-1">needs review</div>{% endif %}
+                  </span>
+                  {% if r.processing_error %}<div class="app-badge app-badge-warning dashboard-inline-badge">needs review</div>{% endif %}
                 </td>
-                <td class="text-right">{{ r.total_amount|default:"—" }}</td>
-                <td class="text-right">{{ r.sales_tax_amount|default:"—" }}</td>
-                <td class="text-right">
-                  <a href="{% url 'receipts:dashboard' %}?receipt={{ r.id }}#receipt-review" class="dashboard-review-link"
-                          hx-get="{% url 'receipts:receipt_detail' r.id %}"
-                          hx-target="#receipt-review"
-                          hx-swap="innerHTML">
-                    Review
-                  </a>
-                </td>
+                <td class="dashboard-table-number dashboard-table-amount">{{ r.total_amount|default:"—" }}</td>
+                <td class="dashboard-table-number dashboard-table-tax">{{ r.sales_tax_amount|default:"—" }}</td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
         {% else %}
-          <div class="rounded-3xl bg-base-200 p-8 text-center">
-            <p class="opacity-70">No receipts yet. Capture one to get started.</p>
-            <a href="{% url 'receipts:capture' %}" class="btn btn-primary mt-4">Capture receipt</a>
+          <div class="dashboard-empty-state">
+            <p class="muted-copy">No receipts yet. Capture one to get started.</p>
+            <a href="{% url 'receipts:capture' %}" class="app-button app-button-primary dashboard-empty-cta">Capture receipt</a>
           </div>
         {% endif %}
       </div>
-    </div>
+    </section>
 
     <aside id="receipt-review" class="receipt-review-panel">
       {% if selected_receipt %}
-        {% include "receipts/_receipt_detail.html" with receipt=selected_receipt image_url=selected_image_url full_image_url=selected_full_image_url saved=selected_saved %}
+        {% include "receipts/_receipt_detail.html" with receipt=selected_receipt image_url=selected_image_url full_image_url=selected_full_image_url saved=selected_saved delete_error=selected_delete_error %}
       {% else %}
-        <div class="card bg-base-100 shadow-xl">
-          <div class="card-body receipt-review-empty items-center justify-center text-center">
-            <h2 class="card-title">Nothing to review yet</h2>
-            <p class="opacity-70">Captured receipts will appear here for side-by-side review.</p>
+        <div class="surface-card">
+          <div class="surface-body receipt-review-empty dashboard-review-empty">
+            <h2 class="section-title section-title-compact">Nothing to review yet</h2>
+            <p class="muted-copy">Captured receipts will appear here for side-by-side review.</p>
           </div>
         </div>
       {% endif %}
@@ -153,5 +148,12 @@
     updateDashboardConnectionState();
     window.addEventListener('online', updateDashboardConnectionState);
     window.addEventListener('offline', updateDashboardConnectionState);
+    document.addEventListener('keydown', (event) => {
+      const row = event.target.closest('.dashboard-row-clickable');
+      if (!row) return;
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      row.click();
+    });
   </script>
 {% endblock %}

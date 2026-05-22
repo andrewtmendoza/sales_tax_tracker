@@ -90,3 +90,20 @@ def download_image(
     bucket = bucket or str(settings.RUSTFS_BUCKET)
     response = client.get_object(Bucket=bucket, Key=key)
     return response["Body"].read(), str(response.get("ContentType") or "application/octet-stream")
+
+
+def delete_image(
+    key: str,
+    *,
+    client=None,
+    bucket: str | None = None,
+) -> None:
+    client = client or get_client()
+    bucket = bucket or str(settings.RUSTFS_BUCKET)
+    try:
+        client.delete_object(Bucket=bucket, Key=key)
+    except ClientError as exc:
+        code = exc.response.get("Error", {}).get("Code", "")
+        status = exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+        if code not in {"404", "NoSuchKey", "NoSuchBucket"} and status != 404:
+            raise

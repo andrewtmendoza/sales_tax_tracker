@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import date
 from decimal import Decimal
+from unittest.mock import call
 
 import pytest
 from django.test import Client
@@ -104,11 +105,41 @@ def test_patch_updates_fields(client):
 
 
 @pytest.mark.django_db
-def test_delete_receipt(client):
-    receipt = Receipt.objects.create(file_hash="0" * 64)
+def test_delete_receipt(client, mocker):
+    receipt = Receipt.objects.create(file_hash="0" * 64, rustfs_path="receipts/original.jpg")
+    mocker.patch("receipts.services.receipts.storage.delete_image")
     response = client.delete(f"/api/receipts/{receipt.id}", **_csrf_headers(client))
     assert response.status_code == 204
     assert Receipt.objects.count() == 0
+
+
+@pytest.mark.django_db
+def test_delete_receipt_removes_original_and_thumbnail(client, mocker):
+    receipt = Receipt.objects.create(file_hash="0" * 64, rustfs_path="receipts/original.jpg")
+    delete_image = mocker.patch("receipts.services.receipts.storage.delete_image")
+
+    response = client.delete(f"/api/receipts/{receipt.id}", **_csrf_headers(client))
+
+    assert response.status_code == 204
+    assert Receipt.objects.count() == 0
+    delete_image.assert_has_calls(
+        [call("receipts/original.jpg"), call("receipts/original.thumb.jpg")]
+    )
+
+
+@pytest.mark.django_db
+def test_delete_receipt_keeps_database_row_when_file_delete_fails(client, mocker):
+    receipt = Receipt.objects.create(file_hash="1" * 64, rustfs_path="receipts/original.jpg")
+    mocker.patch(
+        "receipts.services.receipts.storage.delete_image",
+        side_effect=RuntimeError("storage down"),
+    )
+
+    response = client.delete(f"/api/receipts/{receipt.id}", **_csrf_headers(client))
+
+    assert response.status_code == 502
+    assert response.json()["detail"] == "Failed to delete receipt files"
+    assert Receipt.objects.filter(id=receipt.id).exists()
 
 
 @pytest.mark.django_db

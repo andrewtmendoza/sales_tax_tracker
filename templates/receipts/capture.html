@@ -16,64 +16,64 @@
 {% endblock %}
 
 {% block content %}
-<section class="capture-shell mx-auto max-w-md pb-24" x-data="receiptCapture" x-init="init()">
-  <div class="capture-card card bg-base-100 shadow-xl">
-    <div class="capture-card-body card-body gap-4">
-      <div class="capture-header flex items-center justify-between gap-3">
+<section class="capture-shell" x-data="receiptCapture" x-init="init()">
+  <div class="capture-card surface-card">
+    <div class="capture-card-body surface-body capture-stack">
+      <div class="capture-header">
         <div>
-          <h1 class="capture-title card-title text-2xl">Capture receipt</h1>
-          <p class="capture-subtitle text-sm opacity-70" x-text="online ? 'Ready to sync' : 'Offline: saved locally'"></p>
+          <h1 class="capture-title section-title">Capture receipt</h1>
+          <p class="capture-subtitle muted-copy" x-text="online ? 'Ready to sync' : 'Offline: saved locally'"></p>
         </div>
-        <div class="capture-badge badge" :class="online ? 'badge-success' : 'badge-warning'" x-text="online ? 'online' : 'offline'"></div>
+        <div class="capture-badge app-badge" :class="online ? 'app-badge-success' : 'app-badge-warning'" x-text="online ? 'online' : 'offline'"></div>
       </div>
 
-      <div class="capture-camera relative overflow-hidden rounded-[2rem] border border-base-300 bg-base-200 p-5 text-center transition active:scale-[0.99]">
-        <div class="capture-camera-icon mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-primary text-primary-content shadow-lg">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-9 w-9" aria-hidden="true">
+      <div class="capture-camera">
+        <div class="capture-camera-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="capture-camera-svg" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.2-1.6A2 2 0 0 1 10.8 3.6h2.4a2 2 0 0 1 1.6.8L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M15.5 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Z" />
           </svg>
         </div>
-        <div class="capture-camera-title block text-lg font-bold">Open camera</div>
-        <p class="capture-camera-copy mt-1 text-sm opacity-70">Use iOS “Take Photo” for a new receipt.</p>
-        <input id="receipt-camera" name="receipt" type="file" accept="image/*" class="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0" aria-label="Open camera" @change="handleFile($event)" />
+        <div class="capture-camera-title">Open camera</div>
+        <p class="capture-camera-copy muted-copy">Use iOS “Take Photo” for a new receipt.</p>
+        <input id="receipt-camera" name="receipt" type="file" accept="image/*" class="capture-camera-input" aria-label="Open camera" @change="handleFile($event)" />
       </div>
 
       <template x-if="previewUrl">
-        <div class="capture-preview overflow-hidden rounded-3xl border border-base-300 bg-base-200">
-          <img :src="previewUrl" alt="Receipt preview" class="max-h-[50vh] w-full object-contain" />
+        <div class="capture-preview">
+          <img :src="previewUrl" alt="Receipt preview" class="capture-preview-image" />
         </div>
       </template>
 
-      <div class="capture-panel rounded-2xl bg-base-200 p-4 text-sm">
-        <div class="capture-row flex items-center justify-between">
-          <span class="capture-muted opacity-70">Waiting to sync</span>
-          <span class="capture-count badge badge-neutral" x-text="queuedCount"></span>
+      <div class="capture-panel capture-panel-muted">
+        <div class="capture-row capture-row-meta">
+          <span class="capture-muted muted-copy">Waiting to sync</span>
+          <span class="capture-count app-badge app-badge-neutral" x-text="queuedCount"></span>
         </div>
       </div>
 
-      <div class="capture-panel capture-status rounded-2xl bg-base-200 p-4 text-sm" role="status" aria-live="polite">
-        <div class="capture-status-text font-semibold" x-text="status"></div>
-        <div class="capture-muted mt-1 opacity-70" x-show="syncing">Uploading queued receipts... keep this screen open.</div>
-        <div class="capture-offline-ready mt-2 text-xs opacity-70">
+      <div class="capture-panel capture-status" role="status" aria-live="polite">
+        <div class="capture-status-text" x-text="status"></div>
+        <div class="capture-status-note muted-copy" x-show="syncing">Uploading queued receipts... keep this screen open.</div>
+        <div class="capture-offline-ready muted-copy-small">
           <span x-text="offlineReadyText()">Preparing offline mode...</span>
         </div>
-        <div class="mt-3 space-y-2" x-show="syncing">
-          <div class="capture-row flex items-center justify-between text-xs opacity-70">
+        <div class="capture-status-progress" x-show="syncing">
+          <div class="capture-row capture-progress-meta muted-copy-small">
             <span x-text="processingUpload ? 'Server processing' : 'Phone to server upload'"></span>
             <span x-show="!processingUpload" x-text="`${uploadProgress}%`"></span>
           </div>
-          <div class="capture-progress-track h-2 overflow-hidden rounded-full bg-base-300">
-            <div x-show="!processingUpload" class="capture-progress-bar h-full rounded-full bg-secondary transition-all duration-200" :style="`width: ${uploadProgress}%`"></div>
-            <div x-show="processingUpload" class="capture-progress-indeterminate h-full w-1/2 animate-pulse rounded-full bg-secondary"></div>
+          <div class="capture-progress-track">
+            <div x-show="!processingUpload" class="capture-progress-bar" :style="`transform: scaleX(${uploadProgress / 100})`"></div>
+            <div x-show="processingUpload" class="capture-progress-indeterminate"></div>
           </div>
-          <div class="capture-muted text-xs opacity-70" x-show="activeUploadName" x-text="activeUploadName"></div>
+          <div class="capture-upload-name muted-copy-small" x-show="activeUploadName" x-text="activeUploadName"></div>
         </div>
       </div>
 
-      <div class="capture-actions card-actions justify-between">
-        <button type="button" class="capture-button capture-button-ghost btn btn-ghost" @click="refreshQueue()">Refresh queue</button>
-        <button type="button" class="capture-button capture-button-secondary btn btn-secondary" :disabled="syncing || !queuedCount" @click="syncQueue()">Sync now</button>
+      <div class="capture-actions">
+        <button type="button" class="app-button app-button-ghost capture-button" @click="refreshQueue()">Refresh queue</button>
+        <button type="button" class="app-button app-button-primary capture-button" :disabled="syncing || !queuedCount" @click="syncQueue()">Sync now</button>
       </div>
     </div>
   </div>

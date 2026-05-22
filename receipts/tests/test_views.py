@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from io import BytesIO
+from unittest.mock import call
 
 import pytest
 from botocore.exceptions import ClientError
@@ -40,7 +41,7 @@ def test_dashboard_renders(client):
     assert b"Sales Tax Tracker" in response.content
     assert b"calc(env(safe-area-inset-top) + 0.75rem)" in response.content
     assert b"receipts/dashboard.css" in response.content
-    assert b'<script src="https://cdn.tailwindcss.com"></script>' in response.content
+    assert b"cdn.tailwindcss.com" not in response.content
     assert b"theme.css" in response.content
 
 
@@ -73,9 +74,11 @@ def test_dashboard_table_links_load_receipt_detail_with_htmx(client):
     content = response.content.decode()
     assert "YTD Sales Tax (2026)" in content
     assert "Costco" in content
-    assert f'href="{reverse("receipts:dashboard")}?receipt={receipt.id}#receipt-review"' in content
     assert f"hx-get=\"{reverse('receipts:receipt_detail', args=[receipt.id])}\"" in content
     assert 'hx-target="#receipt-review"' in content
+    expected_push_url = f'{reverse("receipts:dashboard")}?receipt={receipt.id}#receipt-review'
+    assert f'hx-push-url="{expected_push_url}"' in content
+    assert 'dashboard-row-clickable' in content
 
 
 @pytest.mark.django_db
@@ -130,6 +133,9 @@ def test_receipt_detail_renders_side_by_side_editor(client, mocker):
     assert reverse("receipts:receipt_thumbnail", args=[receipt.id]) in content
     assert reverse("receipts:receipt_image", args=[receipt.id]) in content
     assert f"hx-post=\"{reverse('receipts:receipt_update', args=[receipt.id])}\"" in content
+    assert f"action=\"{reverse('receipts:receipt_delete', args=[receipt.id])}\"" in content
+    assert "Delete this receipt and its stored image? This cannot be undone." in content
+    assert "hx-confirm" not in content
     assert 'name="merchant_name"' in content
     assert 'name="sales_tax_amount"' in content
     assert 'action="/receipts/' in content
@@ -170,6 +176,7 @@ def test_receipt_update_saves_metadata_and_returns_detail(client, mocker):
     assert receipt.total_amount == Decimal("44.20")
     assert receipt.sales_tax_amount == Decimal("3.12")
     assert "saved" in response.content.decode()
+    assert 'value="2026-03-15"' in response.content.decode()
 
 
 @pytest.mark.django_db
@@ -331,6 +338,39 @@ def test_receipt_update_requires_post(client):
 
 
 @pytest.mark.django_db
+def test_receipt_delete_redirects_dashboard_and_removes_receipt(client, mocker):
+    receipt = Receipt.objects.create(file_hash="8" * 64, rustfs_path="receipts/delete.jpg")
+    delete_image = mocker.patch("receipts.services.receipts.storage.delete_image")
+
+    response = client.post(reverse("receipts:receipt_delete", args=[receipt.id]))
+
+    assert response.status_code == 302
+    assert response["Location"] == reverse("receipts:dashboard")
+    assert not Receipt.objects.filter(id=receipt.id).exists()
+    delete_image.assert_has_calls(
+        [call("receipts/delete.jpg"), call("receipts/delete.thumb.jpg")]
+    )
+
+
+@pytest.mark.django_db
+def test_receipt_delete_htmx_failure_renders_error_and_keeps_receipt(client, mocker):
+    receipt = Receipt.objects.create(file_hash="9" * 64, rustfs_path="receipts/delete.jpg")
+    mocker.patch(
+        "receipts.services.receipts.storage.delete_image",
+        side_effect=RuntimeError("storage down"),
+    )
+
+    response = client.post(
+        reverse("receipts:receipt_delete", args=[receipt.id]),
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 502
+    assert Receipt.objects.filter(id=receipt.id).exists()
+    assert "Could not delete the receipt files" in response.content.decode()
+
+
+@pytest.mark.django_db
 def test_capture_page_renders(client):
     response = client.get(reverse("receipts:capture"))
     assert response.status_code == 200
@@ -347,7 +387,7 @@ def test_capture_page_contains_ios_camera_and_offline_sync_assets(client):
     assert 'id="receipt-library"' not in content
     assert "Choose from photo roll" not in content
     assert 'class="hidden"' not in content
-    assert 'opacity-0' in content
+    assert 'class="capture-camera-input"' in content
     assert "file-input" not in content
     assert "receiptCapture" in content
     assert "receipts/capture.js" in content
@@ -414,6 +454,5 @@ def test_capture_script_contains_required_offline_primitives(client):
 
 def test_capture_styles_use_emerald_theme_accents():
     content = (settings.BASE_DIR / "static" / "receipts" / "capture.css").read_text()
-    assert "linear-gradient(135deg, #0c885f, #0f766e)" in content
-    assert "linear-gradient(90deg, #0c885f, #0f766e)" in content
+    assert "background: var(--color-accent-strong);" in content
     assert "#7c3aed" not in content

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from typing import Annotated, cast
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -10,8 +11,7 @@ from ninja.files import UploadedFile
 
 from receipts.models import Receipt
 from receipts.services import ingest
-
-IMAGE_FILE = File(...)
+from receipts.services import receipts as receipt_service
 
 
 class ReceiptIn(Schema):
@@ -58,6 +58,18 @@ class YTDOut(Schema):
 router = Router(tags=["receipts"])
 
 
+def _receipt_out(receipt: Receipt) -> ReceiptOut:
+    return ReceiptOut(
+        id=cast(int, receipt.pk),
+        file_hash=cast(str, receipt.file_hash),
+        rustfs_path=cast(str, receipt.rustfs_path),
+        merchant_name=cast(str, receipt.merchant_name),
+        transaction_date=cast(date | None, receipt.transaction_date),
+        total_amount=cast(Decimal | None, receipt.total_amount),
+        sales_tax_amount=cast(Decimal | None, receipt.sales_tax_amount),
+    )
+
+
 @router.get("/", response=list[ReceiptOut])
 def list_receipts(request):
     return list(Receipt.objects.all())
@@ -69,7 +81,10 @@ def create_receipt(request, payload: ReceiptIn):
     if existing:
         return Status(
             409,
-            DuplicateOut(detail="Receipt with this file_hash already exists.", existing=existing),
+            DuplicateOut(
+                detail="Receipt with this file_hash already exists.",
+                existing=_receipt_out(existing),
+            ),
         )
     receipt = Receipt.objects.create(**payload.dict())
     return Status(201, receipt)
@@ -81,7 +96,7 @@ def create_receipt(request, payload: ReceiptIn):
 )
 def upload_receipt(
     request,
-    image: UploadedFile = IMAGE_FILE,
+    image: Annotated[UploadedFile, File(...)],  # pyright: ignore[reportCallIssue]
 ):
     content_type = (image.content_type or "").lower()
     if content_type not in settings.RECEIPT_ALLOWED_IMAGE_TYPES:
@@ -99,7 +114,10 @@ def upload_receipt(
     except ingest.DuplicateReceipt as exc:
         return Status(
             409,
-            DuplicateOut(detail="Receipt already uploaded.", existing=exc.existing),
+            DuplicateOut(
+                detail="Receipt already uploaded.",
+                existing=_receipt_out(exc.existing),
+            ),
         )
     return Status(201, result.receipt)
 
@@ -118,10 +136,13 @@ def update_receipt(request, receipt_id: int, payload: ReceiptPatch):
     return receipt
 
 
-@router.delete("/{receipt_id}", response={204: None})
+@router.delete("/{receipt_id}", response={204: None, 502: ErrorOut})
 def delete_receipt(request, receipt_id: int):
     receipt = get_object_or_404(Receipt, id=receipt_id)
-    receipt.delete()
+    try:
+        receipt_service.delete_receipt(receipt)
+    except Exception:
+        return Status(502, ErrorOut(detail="Failed to delete receipt files"))
     return Status(204, None)
 
 
