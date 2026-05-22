@@ -3,33 +3,33 @@
 {% block title %}Log In · Sales Tax Tracker{% endblock %}
 
 {% block content %}
-<section class="mx-auto max-w-md">
-  <div class="card bg-base-100 shadow-xl">
-    <div class="card-body gap-4">
+<section class="auth-shell">
+  <div class="surface-card auth-card">
+    <div class="surface-body auth-body">
       <div>
-        <h1 class="card-title text-2xl">Log in</h1>
-        <p class="text-sm opacity-70">Sign in to capture and review receipts.</p>
+        <h1 class="section-title">Log in</h1>
+        <p class="section-note muted-copy">Sign in to capture and review receipts.</p>
       </div>
 
       {% if form.errors %}
-        <div class="alert alert-error text-sm">Your username and password did not match.</div>
+        <div class="app-alert app-alert-error">Your username and password did not match.</div>
       {% endif %}
 
-      <form method="post" class="grid gap-3">
+      <form method="post" class="stack-form">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ next }}" />
 
-        <label class="form-control">
-          <div class="label"><span class="label-text">Username</span></div>
-          <input type="text" name="username" autofocus autocomplete="username" class="input input-bordered" required />
+        <label class="field">
+          <span class="field-label">Username</span>
+          <input type="text" name="username" autofocus autocomplete="username" class="field-input" required />
         </label>
 
-        <label class="form-control">
-          <div class="label"><span class="label-text">Password</span></div>
-          <input type="password" name="password" autocomplete="current-password" class="input input-bordered" required />
+        <label class="field">
+          <span class="field-label">Password</span>
+          <input type="password" name="password" autocomplete="current-password" class="field-input" required />
         </label>
 
-        <button type="submit" class="btn btn-primary">Log in</button>
+        <button type="submit" class="app-button app-button-primary">Log in</button>
       </form>
     </div>
   </div>

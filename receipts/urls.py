@@ -17,4 +17,5 @@ urlpatterns = [
         name="receipt_thumbnail",
     ),
     path("receipts/<int:receipt_id>/update/", views.receipt_update, name="receipt_update"),
+    path("receipts/<int:receipt_id>/delete/", views.receipt_delete, name="receipt_delete"),
 ]

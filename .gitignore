@@ -12,9 +12,13 @@ htmlcov/
 .ruff_cache/
 .DS_Store
 node_modules/
+.agents/
 .claude/
+.impeccable/
 .playwright/
+.playwright-cli/
 .verification/
+test_data/
 *.pem
 *.key
 *.p12
