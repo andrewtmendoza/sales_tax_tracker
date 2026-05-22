@@ -94,3 +94,28 @@ def test_download_image_reads_bytes_and_content_type():
     assert file_bytes == b"img-bytes"
     assert content_type == "image/jpeg"
     client.get_object.assert_called_once_with(Bucket="receipts", Key="receipts/x.jpg")
+
+
+def test_delete_image_calls_delete_object():
+    client = MagicMock()
+
+    storage.delete_image("receipts/x.jpg", client=client, bucket="receipts")
+
+    client.delete_object.assert_called_once_with(Bucket="receipts", Key="receipts/x.jpg")
+
+
+def test_delete_image_ignores_missing_object():
+    client = MagicMock()
+    client.delete_object.side_effect = _client_error("NoSuchKey", 404)
+
+    storage.delete_image("receipts/x.jpg", client=client, bucket="receipts")
+
+    client.delete_object.assert_called_once_with(Bucket="receipts", Key="receipts/x.jpg")
+
+
+def test_delete_image_reraises_other_errors():
+    client = MagicMock()
+    client.delete_object.side_effect = _client_error("AccessDenied", 403)
+
+    with pytest.raises(ClientError):
+        storage.delete_image("receipts/x.jpg", client=client, bucket="receipts")
