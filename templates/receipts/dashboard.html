@@ -118,7 +118,7 @@
 
     <aside id="receipt-review" class="receipt-review-panel">
       {% if selected_receipt %}
-        {% include "receipts/_receipt_detail.html" with receipt=selected_receipt image_url=selected_image_url full_image_url=selected_full_image_url saved=selected_saved %}
+        {% include "receipts/_receipt_detail.html" with receipt=selected_receipt image_url=selected_image_url full_image_url=selected_full_image_url saved=selected_saved delete_error=selected_delete_error %}
       {% else %}
         <div class="surface-card">
           <div class="surface-body receipt-review-empty dashboard-review-empty">

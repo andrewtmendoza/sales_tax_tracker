@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from pathlib import PurePosixPath
@@ -11,11 +12,13 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from receipts.models import Receipt
+from receipts.services import receipts as receipt_service
 from receipts.services import storage
 
 THUMBNAIL_MAX_SIZE = (1000, 1000)
@@ -34,6 +37,7 @@ def dashboard(request):
         "selected_image_url": _thumbnail_url(selected_receipt) if selected_receipt else "",
         "selected_full_image_url": _image_url(selected_receipt) if selected_receipt else "",
         "selected_saved": request.GET.get("saved") == "1",
+        "selected_delete_error": request.GET.get("delete_error") == "1",
     }
     return render(request, "receipts/dashboard.html", context)
 
@@ -92,7 +96,7 @@ def receipt_thumbnail(request, receipt_id: int):
 def receipt_update(request, receipt_id: int):
     receipt = get_object_or_404(Receipt, id=receipt_id)
     receipt.merchant_name = request.POST.get("merchant_name", "").strip()
-    receipt.transaction_date = request.POST.get("transaction_date") or None
+    receipt.transaction_date = _date_or_none(request.POST.get("transaction_date"))
     receipt.total_amount = _decimal_or_none(request.POST.get("total_amount"))
     receipt.sales_tax_amount = _decimal_or_none(request.POST.get("sales_tax_amount"))
     receipt.save()
@@ -102,17 +106,47 @@ def receipt_update(request, receipt_id: int):
 
 
 @login_required
+@require_POST
+def receipt_delete(request, receipt_id: int):
+    receipt = get_object_or_404(Receipt, id=receipt_id)
+    try:
+        receipt_service.delete_receipt(receipt)
+    except Exception:
+        if not getattr(request, "htmx", False):
+            return redirect(_dashboard_receipt_url(receipt.id, delete_error=True))
+        response = render(
+            request,
+            "receipts/_receipt_detail.html",
+            _detail_context(receipt, delete_error=True),
+        )
+        response.status_code = 502
+        return response
+
+    dashboard_url = reverse("receipts:dashboard")
+    if not getattr(request, "htmx", False):
+        return redirect(dashboard_url)
+    response = HttpResponse(status=204)
+    response["HX-Redirect"] = dashboard_url
+    return response
+
+
+@login_required
 @ensure_csrf_cookie
 def capture(request):
     return render(request, "receipts/capture.html", {})
 
 
-def _detail_context(receipt: Receipt, saved: bool = False):
+def _detail_context(
+    receipt: Receipt,
+    saved: bool = False,
+    delete_error: bool = False,
+):
     return {
         "receipt": receipt,
         "image_url": _thumbnail_url(receipt),
         "full_image_url": _image_url(receipt),
         "saved": saved,
+        "delete_error": delete_error,
     }
 
 
@@ -125,10 +159,17 @@ def _selected_receipt(receipt_id: str | None):
     return Receipt.objects.first()
 
 
-def _dashboard_receipt_url(receipt_id: int, *, saved: bool = False) -> str:
+def _dashboard_receipt_url(
+    receipt_id: int,
+    *,
+    saved: bool = False,
+    delete_error: bool = False,
+) -> str:
     query = {"receipt": str(receipt_id)}
     if saved:
         query["saved"] = "1"
+    if delete_error:
+        query["delete_error"] = "1"
     return f"{reverse('receipts:dashboard')}?{urlencode(query)}#receipt-review"
 
 
@@ -177,6 +218,12 @@ def _decimal_or_none(value: str | None):
         return Decimal(value).quantize(Decimal("0.01"))
     except (InvalidOperation, ValueError):
         return None
+
+
+def _date_or_none(value: str | None) -> date | None:
+    if not value:
+        return None
+    return parse_date(value)
 
 
 def web_manifest(request):

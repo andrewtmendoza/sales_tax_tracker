@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 from io import BytesIO
+from unittest.mock import call
 
 import pytest
 from botocore.exceptions import ClientError
@@ -132,6 +133,9 @@ def test_receipt_detail_renders_side_by_side_editor(client, mocker):
     assert reverse("receipts:receipt_thumbnail", args=[receipt.id]) in content
     assert reverse("receipts:receipt_image", args=[receipt.id]) in content
     assert f"hx-post=\"{reverse('receipts:receipt_update', args=[receipt.id])}\"" in content
+    assert f"action=\"{reverse('receipts:receipt_delete', args=[receipt.id])}\"" in content
+    assert "Delete this receipt and its stored image? This cannot be undone." in content
+    assert "hx-confirm" not in content
     assert 'name="merchant_name"' in content
     assert 'name="sales_tax_amount"' in content
     assert 'action="/receipts/' in content
@@ -172,6 +176,7 @@ def test_receipt_update_saves_metadata_and_returns_detail(client, mocker):
     assert receipt.total_amount == Decimal("44.20")
     assert receipt.sales_tax_amount == Decimal("3.12")
     assert "saved" in response.content.decode()
+    assert 'value="2026-03-15"' in response.content.decode()
 
 
 @pytest.mark.django_db
@@ -330,6 +335,39 @@ def test_receipt_update_requires_post(client):
     assert receipt.transaction_date == date(2026, 1, 1)
     assert receipt.total_amount == Decimal("10.00")
     assert receipt.sales_tax_amount == Decimal("1.00")
+
+
+@pytest.mark.django_db
+def test_receipt_delete_redirects_dashboard_and_removes_receipt(client, mocker):
+    receipt = Receipt.objects.create(file_hash="8" * 64, rustfs_path="receipts/delete.jpg")
+    delete_image = mocker.patch("receipts.services.receipts.storage.delete_image")
+
+    response = client.post(reverse("receipts:receipt_delete", args=[receipt.id]))
+
+    assert response.status_code == 302
+    assert response["Location"] == reverse("receipts:dashboard")
+    assert not Receipt.objects.filter(id=receipt.id).exists()
+    delete_image.assert_has_calls(
+        [call("receipts/delete.jpg"), call("receipts/delete.thumb.jpg")]
+    )
+
+
+@pytest.mark.django_db
+def test_receipt_delete_htmx_failure_renders_error_and_keeps_receipt(client, mocker):
+    receipt = Receipt.objects.create(file_hash="9" * 64, rustfs_path="receipts/delete.jpg")
+    mocker.patch(
+        "receipts.services.receipts.storage.delete_image",
+        side_effect=RuntimeError("storage down"),
+    )
+
+    response = client.post(
+        reverse("receipts:receipt_delete", args=[receipt.id]),
+        HTTP_HX_REQUEST="true",
+    )
+
+    assert response.status_code == 502
+    assert Receipt.objects.filter(id=receipt.id).exists()
+    assert "Could not delete the receipt files" in response.content.decode()
 
 
 @pytest.mark.django_db
