@@ -420,16 +420,17 @@ def test_service_worker_route(client):
     assert response["content-type"].startswith("application/javascript")
     assert response["Service-Worker-Allowed"] == "/"
     content = response.content.decode()
-    assert "salt-helper-v5" in content
+    assert "salt-helper-v6" in content
     assert "'/capture/'" in content
     assert "'/static/receipts/capture.css'" in content
     assert "'/static/vendor/alpinejs/cdn.min.js'" in content
     assert "fetch" in content
     assert "caches.match(url.pathname)" in content
-    assert "request.mode === 'navigate' && url.pathname === '/capture/'" in content
+    assert "request.mode === 'navigate'" in content
+    assert "url.pathname === '/' || url.pathname === '/capture/'" in content
     assert "status: 504" in content
     assert "url.origin === self.location.origin" in content
-    assert "if (url.pathname === '/') return caches.match('/')" not in content
+    assert "return caches.match('/capture/')" in content
 
 
 def test_health_route_is_public(anonymous_client):

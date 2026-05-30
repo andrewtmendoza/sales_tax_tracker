@@ -252,7 +252,7 @@ def web_manifest(request):
 
 def service_worker(request):
     js = """
-const CACHE_NAME = 'salt-helper-v5';
+const CACHE_NAME = 'salt-helper-v6';
 const CORE_ASSETS = [
   '/capture/',
   '/manifest.json',
@@ -296,7 +296,10 @@ self.addEventListener('fetch', (event) => {
         if (cached) return cached;
         return caches.match(url.pathname).then((pathCached) => {
           if (pathCached) return pathCached;
-          if (request.mode === 'navigate' && url.pathname === '/capture/') {
+          if (
+            request.mode === 'navigate' &&
+            (url.pathname === '/' || url.pathname === '/capture/')
+          ) {
             return caches.match('/capture/');
           }
           return new Response('', { status: 504, statusText: 'Offline' });
