@@ -39,6 +39,7 @@ def test_dashboard_renders(client):
     response = client.get(reverse("receipts:dashboard"))
     assert response.status_code == 200
     assert b"Sales Tax Tracker" in response.content
+    assert f"v{settings.APP_VERSION}".encode() in response.content
     assert b"calc(env(safe-area-inset-top) + 0.75rem)" in response.content
     assert b"receipts/dashboard.css" in response.content
     assert b"cdn.tailwindcss.com" not in response.content

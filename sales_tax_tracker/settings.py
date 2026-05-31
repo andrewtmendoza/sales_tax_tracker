@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import tomllib
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -18,8 +19,17 @@ def env_list(key: str, default: str = "") -> list[str]:
     return [item.strip() for item in os.getenv(key, default).split(",") if item.strip()]
 
 
+def project_version() -> str:
+    try:
+        with (BASE_DIR / "pyproject.toml").open("rb") as pyproject:
+            return tomllib.load(pyproject)["project"]["version"]
+    except (FileNotFoundError, KeyError, TypeError, tomllib.TOMLDecodeError):
+        return "dev"
+
+
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "")
 DEBUG = env_bool("DJANGO_DEBUG", False)
+APP_VERSION = project_version()
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
 SECURE_PROXY_SSL_HEADER = (
@@ -65,6 +75,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "sales_tax_tracker.context_processors.app_version",
             ],
         },
     },
