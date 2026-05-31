@@ -420,17 +420,22 @@ def test_service_worker_route(client):
     assert response["content-type"].startswith("application/javascript")
     assert response["Service-Worker-Allowed"] == "/"
     content = response.content.decode()
-    assert "salt-helper-v6" in content
+    assert "salt-helper-v7" in content
+    assert "NAVIGATION_TIMEOUT_MS = 2000" in content
     assert "'/capture/'" in content
+    assert "'/static/theme.css'" in content
     assert "'/static/receipts/capture.css'" in content
     assert "'/static/vendor/alpinejs/cdn.min.js'" in content
     assert "fetch" in content
-    assert "caches.match(url.pathname)" in content
+    assert "fetchWithTimeout" in content
+    assert "captureFallback" in content
     assert "request.mode === 'navigate'" in content
-    assert "url.pathname === '/' || url.pathname === '/capture/'" in content
-    assert "status: 504" in content
+    assert "status: 503" in content
+    assert "Offline capture is not ready." in content
+    assert "Open this app once while connected to your server" in content
+    assert "new Response('', { status: 504" not in content
     assert "url.origin === self.location.origin" in content
-    assert "return caches.match('/capture/')" in content
+    assert "caches.match('/capture/')" in content
 
 
 def test_health_route_is_public(anonymous_client):
@@ -442,6 +447,7 @@ def test_health_route_is_public(anonymous_client):
 def test_capture_script_contains_required_offline_primitives(client):
     content = (settings.BASE_DIR / "static" / "receipts" / "capture.js").read_text()
     assert "OFFLINE_CORE_ASSETS" in content
+    assert "'/static/theme.css'" in content
     assert "indexedDB.open('salt-helper-receipts'" in content
     assert "navigator.serviceWorker.ready" in content
     assert "Offline ready" in content
@@ -449,8 +455,13 @@ def test_capture_script_contains_required_offline_primitives(client):
     assert "window.addEventListener('online'" in content
     assert "form.append('file_hash'" not in content
     assert "new XMLHttpRequest()" in content
+    assert "xhr.timeout = 30000" in content
+    assert "window.addEventListener('pageshow'" in content
+    assert "window.addEventListener('focus'" in content
+    assert "document.addEventListener('visibilitychange'" in content
     assert "xhr.upload.onprogress" in content
     assert "Upload complete. Reading receipt details" in content
+    assert "Server unreachable. Receipt saved locally." in content
 
 
 def test_capture_styles_use_emerald_theme_accents():

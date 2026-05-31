@@ -252,15 +252,131 @@ def web_manifest(request):
 
 def service_worker(request):
     js = """
-const CACHE_NAME = 'salt-helper-v6';
+const CACHE_NAME = 'salt-helper-v7';
+const NAVIGATION_TIMEOUT_MS = 2000;
 const CORE_ASSETS = [
   '/capture/',
   '/manifest.json',
+  '/static/theme.css',
   '/static/receipts/capture.js',
   '/static/receipts/capture.css',
   '/static/vendor/alpinejs/cdn.min.js',
   '/static/pwa/icon.svg',
 ];
+const OFFLINE_NOT_READY_HTML = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Offline capture unavailable</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem; }
+    body { background: #f3f4f6; color: #111827; }
+    main { max-width: 34rem; margin: 15vh auto; background: white; }
+    main { border-radius: 1rem; padding: 1.5rem; }
+    main { box-shadow: 0 1rem 3rem rgb(15 23 42 / 0.12); }
+    h1 { margin-top: 0; font-size: 1.35rem; }
+    p { color: #4b5563; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Offline capture is not ready.</h1>
+    <p>
+      Open this app once while connected to your server,
+      then wait for "Offline ready".
+    </p>
+  </main>
+</body>
+</html>`;
+
+function fetchWithTimeout(request, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(request, { cache: 'no-store', signal: controller.signal })
+    .finally(() => clearTimeout(timeout));
+}
+
+async function cacheResponse(request, response) {
+  if (response.ok) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  }
+  return response;
+}
+
+async function captureFallback() {
+  const cached = await caches.match('/capture/');
+  if (cached) return cached;
+  return new Response(OFFLINE_NOT_READY_HTML, {
+    status: 503,
+    statusText: 'Offline capture unavailable',
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
+
+function refreshCaptureShell(event, request) {
+  event.waitUntil(
+    fetchWithTimeout(request, NAVIGATION_TIMEOUT_MS)
+      .then((response) => (response.ok ? cacheResponse('/capture/', response) : null))
+      .catch(() => null)
+  );
+}
+
+async function handleNavigation(event, request, url) {
+  if (url.origin !== self.location.origin) return fetch(request);
+  if (url.pathname === '/capture/') {
+    const cached = await caches.match('/capture/');
+    if (cached) {
+      refreshCaptureShell(event, request);
+      return cached;
+    }
+  }
+
+  try {
+    const response = await fetchWithTimeout(request, NAVIGATION_TIMEOUT_MS);
+    if (url.pathname === '/capture/' && response.ok) {
+      return cacheResponse('/capture/', response);
+    }
+    if (response.status < 500) return response;
+  } catch (error) {
+    return captureFallback();
+  }
+  return captureFallback();
+}
+
+function refreshCachedRequest(event, request) {
+  event.waitUntil(
+    fetchWithTimeout(request, NAVIGATION_TIMEOUT_MS)
+      .then((response) => (response.ok ? cacheResponse(request, response) : null))
+      .catch(() => null)
+  );
+}
+
+async function handleCachedGet(event, request, url) {
+  const shouldCache =
+    url.origin === self.location.origin &&
+    (CORE_ASSETS.includes(url.pathname) || url.pathname.startsWith('/static/'));
+  if (!shouldCache) return fetch(request);
+  if (CORE_ASSETS.includes(url.pathname)) {
+    const cached = await caches.match(request);
+    if (cached) {
+      refreshCachedRequest(event, request);
+      return cached;
+    }
+  }
+  try {
+    const response = await fetchWithTimeout(request, NAVIGATION_TIMEOUT_MS);
+    if (response.ok) await cacheResponse(request, response);
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    const pathCached = await caches.match(url.pathname);
+    if (pathCached) return pathCached;
+    return new Response('Offline', { status: 504, statusText: 'Offline' });
+  }
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_ASSETS)));
@@ -280,32 +396,11 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
-  const shouldCache =
-    url.origin === self.location.origin &&
-    (CORE_ASSETS.includes(url.pathname) || url.pathname.startsWith('/static/'));
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (shouldCache && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-        }
-        return response;
-      })
-      .catch(() => caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return caches.match(url.pathname).then((pathCached) => {
-          if (pathCached) return pathCached;
-          if (
-            request.mode === 'navigate' &&
-            (url.pathname === '/' || url.pathname === '/capture/')
-          ) {
-            return caches.match('/capture/');
-          }
-          return new Response('', { status: 504, statusText: 'Offline' });
-        });
-      }))
-  );
+  if (request.mode === 'navigate') {
+    event.respondWith(handleNavigation(event, request, url));
+    return;
+  }
+  event.respondWith(handleCachedGet(event, request, url));
 });
 """.strip()
     response = HttpResponse(js.encode(), content_type="application/javascript")
