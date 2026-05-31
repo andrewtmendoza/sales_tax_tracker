@@ -124,10 +124,22 @@ Install dependencies locally:
 uv sync --dev
 ```
 
+Install the browser used by Playwright E2E tests:
+
+```bash
+uv run playwright install chromium
+```
+
 Run tests:
 
 ```bash
 uv run pytest
+```
+
+Run only the browser E2E tests:
+
+```bash
+uv run pytest -m e2e
 ```
 
 Run hooks:

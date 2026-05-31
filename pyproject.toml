@@ -18,10 +18,12 @@ dependencies = [
 [dependency-groups]
 dev = [
     "model-bakery>=1.23.4",
+    "playwright>=1.60.0",
     "pre-commit>=4.6.0",
     "pytest>=9.0.3",
     "pytest-django>=4.12.0",
     "pytest-mock>=3.15.1",
+    "pytest-playwright>=0.8.0",
     "ruff>=0.15.13",
 ]
 
@@ -36,5 +38,6 @@ select = ["E", "F", "I", "B", "UP", "S"]
 [tool.ruff.lint.per-file-ignores]
 "conftest.py" = ["S106"]
 "receipts/tests/*.py" = ["S101"]
+"receipts/tests/test_capture_e2e.py" = ["S101", "S310"]
 "sales_tax_tracker/settings.py" = ["S105"]
 "sales_tax_tracker/test_settings.py" = ["S105"]
