@@ -71,9 +71,15 @@
   </div>
   {% endwith %}
 
-   <main class="app-main">
+  <main class="app-main">
     {% block content %}{% endblock %}
   </main>
+
+  {% if app_version %}
+    <footer class="app-footer" aria-label="Application version">
+      <span class="app-version">v{{ app_version }}</span>
+    </footer>
+  {% endif %}
 
   {% block extra_scripts %}{% endblock %}
   {% if request.user.is_authenticated %}
