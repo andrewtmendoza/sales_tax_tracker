@@ -1,6 +1,7 @@
 const OFFLINE_CORE_ASSETS = [
   '/capture/',
   '/manifest.json',
+  '/static/theme.css',
   '/static/receipts/capture.js',
   '/static/receipts/capture.css',
   '/static/vendor/alpinejs/cdn.min.js',
@@ -26,15 +27,22 @@ document.addEventListener('alpine:init', () => {
       this.monitorOfflineReady();
       await this.refreshOfflineReady();
       window.addEventListener('online', async () => {
-        this.online = true;
-        await this.refreshOfflineReady();
-        await this.syncQueue();
+        await this.resumeSyncIfPossible();
       });
       window.addEventListener('offline', () => {
         this.online = false;
         this.status = 'Offline. New captures will stay on this device.';
       });
-      if (this.online) await this.syncQueue();
+      window.addEventListener('pageshow', () => {
+        void this.resumeSyncIfPossible();
+      });
+      window.addEventListener('focus', () => {
+        void this.resumeSyncIfPossible();
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') void this.resumeSyncIfPossible();
+      });
+      if (this.online) await this.resumeSyncIfPossible();
     },
 
     monitorOfflineReady() {
@@ -68,6 +76,14 @@ document.addEventListener('alpine:init', () => {
       if (this.offlineReadyState === 'ready') return 'Offline ready';
       if (this.offlineReadyState === 'unavailable') return 'Offline mode unavailable';
       return 'Preparing offline mode...';
+    },
+
+    async resumeSyncIfPossible() {
+      this.online = navigator.onLine;
+      if (!this.online || this.syncing || !this.db) return;
+      await this.refreshOfflineReady();
+      await this.refreshQueue();
+      if (this.queuedCount) await this.syncQueue();
     },
 
     openDb() {
@@ -124,8 +140,12 @@ document.addEventListener('alpine:init', () => {
       });
       event.target.value = '';
       await this.refreshQueue();
+      if (!this.online) {
+        this.status = 'Offline. New captures will stay on this device.';
+        return;
+      }
       this.status = 'Saved locally. Sync will run while this screen is open.';
-      if (this.online) await this.syncQueue();
+      await this.syncQueue();
     },
 
     queueId() {
@@ -168,6 +188,7 @@ document.addEventListener('alpine:init', () => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/receipts/upload');
         xhr.responseType = 'json';
+        xhr.timeout = 30000;
         const csrfToken = this.csrfToken();
         if (csrfToken) xhr.setRequestHeader('X-CSRFToken', csrfToken);
 
@@ -194,6 +215,11 @@ document.addEventListener('alpine:init', () => {
         xhr.onerror = () => {
           this.processingUpload = false;
           reject(new Error('Upload failed'));
+        };
+
+        xhr.ontimeout = () => {
+          this.processingUpload = false;
+          reject(new Error('Upload timed out'));
         };
 
         xhr.onabort = () => {
@@ -235,7 +261,9 @@ document.addEventListener('alpine:init', () => {
         }
       } catch (error) {
         this.resetUploadState();
-        this.status = 'Sync paused. Keep the app open and try again when online.';
+        this.status = navigator.onLine
+          ? 'Server unreachable. Receipt saved locally.'
+          : 'Offline. New captures will stay on this device.';
       } finally {
         this.syncing = false;
         await this.refreshQueue();

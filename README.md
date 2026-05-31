@@ -68,6 +68,17 @@ docker compose exec web python manage.py createsuperuser
 curl http://127.0.0.1:8000/health/
 ```
 
+## Offline iPhone Capture
+
+If you want to capture receipts away from home and sync them later when your phone can reach the server again:
+
+1. Open the app on your iPhone from a local address that reaches your server, such as `http://<local-ip>:8000/capture/` or your local-only domain.
+2. Sign in and stay on `/capture/` until the page shows `Offline ready`.
+3. Add that `/capture/` page to the Home Screen.
+4. If the shortcut later opens while the server is unreachable, the app will fall back to the cached capture screen so new receipts can still be queued locally.
+
+This offline mode is for receipt capture and later sync. The full dashboard still needs a reachable server.
+
 ## Required Configuration
 
 The app will refuse to start unless these are configured:
@@ -113,10 +124,22 @@ Install dependencies locally:
 uv sync --dev
 ```
 
+Install the browser used by Playwright E2E tests:
+
+```bash
+uv run playwright install chromium
+```
+
 Run tests:
 
 ```bash
 uv run pytest
+```
+
+Run only the browser E2E tests:
+
+```bash
+uv run pytest -m e2e
 ```
 
 Run hooks:

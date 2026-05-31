@@ -84,6 +84,9 @@ jobs:
       - name: Run pre-commit hooks
         run: uv run pre-commit run --all-files
 
+      - name: Install Playwright browsers
+        run: uv run playwright install --with-deps chromium
+
       - name: Run tests
         run: uv run pytest
 
