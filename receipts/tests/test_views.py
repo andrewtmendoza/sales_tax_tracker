@@ -8,6 +8,7 @@ from unittest.mock import call
 import pytest
 from botocore.exceptions import ClientError
 from django.conf import settings
+from django.contrib.staticfiles.storage import staticfiles_storage
 from django.test import Client
 from django.urls import reverse
 from PIL import Image
@@ -421,22 +422,55 @@ def test_service_worker_route(client):
     assert response["content-type"].startswith("application/javascript")
     assert response["Service-Worker-Allowed"] == "/"
     content = response.content.decode()
-    assert "salt-helper-v7" in content
+    assert "salt-helper-v8" in content
     assert "NAVIGATION_TIMEOUT_MS = 2000" in content
-    assert "'/capture/'" in content
-    assert "'/static/theme.css'" in content
-    assert "'/static/receipts/capture.css'" in content
-    assert "'/static/vendor/alpinejs/cdn.min.js'" in content
+    assert "DASHBOARD_TIMEOUT_MS = 8000" in content
+    assert "CAPTURE_PATH = \"/capture/\"" in content
+    assert "DASHBOARD_PATH = \"/\"" in content
+    assert staticfiles_storage.url("theme.css") in content
+    assert staticfiles_storage.url("receipts/capture.css") in content
+    assert staticfiles_storage.url("vendor/alpinejs/cdn.min.js") in content
     assert "fetch" in content
     assert "fetchWithTimeout" in content
     assert "captureFallback" in content
+    assert "dashboardFallback" in content
+    assert "pageUnavailableFallback" in content
     assert "request.mode === 'navigate'" in content
     assert "status: 503" in content
     assert "Offline capture is not ready." in content
+    assert "Dashboard unavailable offline." in content
+    assert "Page unavailable offline." in content
     assert "Open this app once while connected to your server" in content
     assert "new Response('', { status: 504" not in content
     assert "url.origin === self.location.origin" in content
-    assert "caches.match('/capture/')" in content
+    assert "caches.match(CAPTURE_PATH)" in content
+    assert "isInitialDashboardLaunch" in content
+
+
+@pytest.mark.django_db
+def test_service_worker_uses_resolved_static_asset_urls(client, mocker):
+    hashed_urls = {
+        "theme.css": "/static/theme.123abc.css",
+        "receipts/capture.js": "/static/receipts/capture.123abc.js",
+        "receipts/capture.css": "/static/receipts/capture.123abc.css",
+        "vendor/alpinejs/cdn.min.js": "/static/vendor/alpinejs/cdn.123abc.js",
+        "pwa/icon.svg": "/static/pwa/icon.123abc.svg",
+    }
+
+    mocker.patch(
+        "receipts.views.staticfiles_storage.url",
+        side_effect=lambda path: hashed_urls[path],
+    )
+
+    response = client.get(reverse("receipts:service_worker"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    for hashed_url in hashed_urls.values():
+        assert hashed_url in content
+    assert "'/static/theme.css'" not in content
+    assert "'/static/receipts/capture.css'" not in content
+    assert "'/static/receipts/capture.js'" not in content
 
 
 def test_health_route_is_public(anonymous_client):
@@ -447,8 +481,9 @@ def test_health_route_is_public(anonymous_client):
 
 def test_capture_script_contains_required_offline_primitives(client):
     content = (settings.BASE_DIR / "static" / "receipts" / "capture.js").read_text()
-    assert "OFFLINE_CORE_ASSETS" in content
-    assert "'/static/theme.css'" in content
+    assert "OFFLINE_REQUIRED_PATHS" in content
+    assert "document.querySelectorAll('link[href], script[src]')" in content
+    assert "HTMLLinkElement" in content
     assert "indexedDB.open('salt-helper-receipts'" in content
     assert "navigator.serviceWorker.ready" in content
     assert "Offline ready" in content

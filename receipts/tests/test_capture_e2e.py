@@ -169,6 +169,8 @@ def authenticate_and_prime_capture(page, context, base_url: str, user) -> None:
     expect(page.get_by_role("heading", name="Capture receipt")).to_be_visible()
     wait_for_service_worker(page)
     expect(page.get_by_text("Offline ready")).to_be_visible(timeout=15000)
+    expect_offline_assets_cached(page)
+    expect_capture_styled(page)
 
 
 def wait_for_service_worker(page) -> None:
@@ -202,6 +204,54 @@ def expect_capture_screen(page) -> None:
     expect(page.get_by_text("Open camera")).to_be_visible()
 
 
+def expect_dashboard_screen(page) -> None:
+    expect(page.get_by_text("YTD Sales Tax", exact=False)).to_be_visible(timeout=10000)
+    expect(page.get_by_role("heading", name="Receipts")).to_be_visible()
+
+
+def expect_capture_styled(page) -> None:
+    camera_icon_box = page.locator(".capture-camera-icon").bounding_box()
+    assert camera_icon_box is not None
+    assert camera_icon_box["width"] < 120
+    assert camera_icon_box["height"] < 120
+    input_opacity = page.locator(".capture-camera-input").evaluate(
+        "element => getComputedStyle(element).opacity"
+    )
+    assert input_opacity == "0"
+    border_radius = page.locator(".capture-card").evaluate(
+        "element => getComputedStyle(element).borderTopLeftRadius"
+    )
+    assert border_radius != "0px"
+
+
+def expect_offline_assets_cached(page) -> None:
+    cache_report = page.evaluate(
+        """
+        async () => {
+          const sameOriginPath = (value) => {
+            if (!value) return '';
+            const url = new URL(value, window.location.origin);
+            if (url.origin !== window.location.origin) return '';
+            return `${url.pathname}${url.search}`;
+          };
+          const assetPaths = [
+            '/capture/',
+            ...Array.from(document.querySelectorAll('link[href], script[src]')).map((element) => (
+              element instanceof HTMLLinkElement ? element.href : element.src
+            )),
+          ].map(sameOriginPath).filter(Boolean);
+          const assets = [...new Set(assetPaths)];
+          const cached = await Promise.all(
+            assets.map((asset) => caches.match(asset).then(Boolean))
+          );
+          return { assets, cached };
+        }
+        """
+    )
+    assert cache_report["assets"]
+    assert all(cache_report["cached"]), cache_report
+
+
 def capture_fake_receipt(page) -> None:
     page.set_input_files(
         "#receipt-camera",
@@ -222,8 +272,15 @@ def test_capture_shell_works_when_browser_is_offline(page, context, origin_proxy
         assert page.evaluate("navigator.onLine") is False
         page.goto(f"{origin_proxy.url}/capture/", wait_until="domcontentloaded")
         expect_capture_screen(page)
-        page.goto(f"{origin_proxy.url}/", wait_until="domcontentloaded")
-        expect_capture_screen(page)
+        expect_capture_styled(page)
+
+        launch_page = context.new_page()
+        try:
+            launch_page.goto(f"{origin_proxy.url}/", wait_until="domcontentloaded")
+            expect_capture_screen(launch_page)
+            expect_capture_styled(launch_page)
+        finally:
+            launch_page.close()
 
         capture_fake_receipt(page)
 
@@ -249,8 +306,7 @@ def test_capture_sync_recovers_when_origin_becomes_reachable(
     origin_proxy.set_available(False)
     page.goto(f"{origin_proxy.url}/capture/", wait_until="domcontentloaded")
     expect_capture_screen(page)
-    page.goto(f"{origin_proxy.url}/", wait_until="domcontentloaded")
-    expect_capture_screen(page)
+    expect_capture_styled(page)
     assert page.evaluate("navigator.onLine") is True
 
     capture_fake_receipt(page)
@@ -267,3 +323,59 @@ def test_capture_sync_recovers_when_origin_becomes_reachable(
     expect_queue_count(page, 0)
     expect(page.get_by_text("All local receipts are synced.")).to_be_visible(timeout=10000)
     assert Receipt.objects.count() == 1
+
+
+def test_root_launch_falls_back_to_capture_when_origin_is_unreachable(
+    page,
+    context,
+    origin_proxy,
+    user,
+) -> None:
+    authenticate_and_prime_capture(page, context, origin_proxy.url, user)
+
+    origin_proxy.set_available(False)
+    launch_page = context.new_page()
+    try:
+        launch_page.goto(f"{origin_proxy.url}/", wait_until="domcontentloaded")
+        assert launch_page.evaluate("navigator.onLine") is True
+        expect_capture_screen(launch_page)
+        expect_capture_styled(launch_page)
+    finally:
+        launch_page.close()
+        origin_proxy.set_available(True)
+
+
+def test_dashboard_navigation_renders_when_origin_is_reachable(
+    page,
+    context,
+    origin_proxy,
+    user,
+) -> None:
+    authenticate_and_prime_capture(page, context, origin_proxy.url, user)
+
+    page.get_by_role("link", name="Dashboard").first.click()
+
+    expect_dashboard_screen(page)
+
+
+def test_dashboard_navigation_shows_offline_message_when_origin_is_unreachable(
+    page,
+    context,
+    origin_proxy,
+    user,
+) -> None:
+    authenticate_and_prime_capture(page, context, origin_proxy.url, user)
+
+    origin_proxy.set_available(False)
+    page.get_by_role("link", name="Dashboard").first.click()
+
+    expect(page.get_by_role("heading", name="Dashboard unavailable offline.")).to_be_visible()
+    expect(
+        page.get_by_text(
+            "Dashboard is unavailable while the server cannot be reached.",
+            exact=False,
+        )
+    ).to_be_visible()
+    page.get_by_role("link", name="Go to Capture").click()
+    expect_capture_screen(page)
+    expect_capture_styled(page)
