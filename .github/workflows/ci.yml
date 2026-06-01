@@ -72,6 +72,45 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Decide heavy checks
+        id: heavy-checks
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          run_e2e=false
+          run_docker_build=false
+
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            git fetch origin "$BASE_REF" --depth=1
+            changed_files="$(git diff --name-only "origin/$BASE_REF...HEAD")"
+
+            if [ "$BASE_REF" = "main" ]; then
+              run_e2e=true
+              run_docker_build=true
+            elif printf '%s\n' "$changed_files" | grep -Eq \
+              -e '^\.github/workflows/ci\.yml$' \
+              -e '^pyproject\.toml$' \
+              -e '^pytest\.ini$' \
+              -e '^uv\.lock$' \
+              -e '^static/' \
+              -e '^templates/' \
+              -e '^receipts/views\.py$' \
+              -e '^receipts/api\.py$' \
+              -e '^receipts/services/ingest\.py$' \
+              -e '^receipts/tests/test_capture_e2e\.py$' \
+              -e '^receipts/tests/test_views\.py$'; then
+              run_e2e=true
+            fi
+          elif [ "$REF_NAME" = "main" ]; then
+            run_e2e=true
+            run_docker_build=true
+          fi
+
+          echo "run_e2e=$run_e2e" >> "$GITHUB_OUTPUT"
+          echo "run_docker_build=$run_docker_build" >> "$GITHUB_OUTPUT"
+
       - name: Sync dependencies
         run: uv sync --dev
 
@@ -85,10 +124,16 @@ jobs:
         run: uv run pre-commit run --all-files
 
       - name: Install Playwright browsers
+        if: steps.heavy-checks.outputs.run_e2e == 'true'
         run: uv run playwright install --with-deps chromium
 
-      - name: Run tests
-        run: uv run pytest
+      - name: Run non-E2E tests
+        run: uv run pytest -m "not e2e"
+
+      - name: Run browser E2E tests
+        if: steps.heavy-checks.outputs.run_e2e == 'true'
+        run: uv run pytest -m e2e
 
       - name: Build Docker image
+        if: steps.heavy-checks.outputs.run_docker_build == 'true'
         run: docker build .
