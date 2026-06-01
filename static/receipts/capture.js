@@ -1,12 +1,4 @@
-const OFFLINE_CORE_ASSETS = [
-  '/capture/',
-  '/manifest.json',
-  '/static/theme.css',
-  '/static/receipts/capture.js',
-  '/static/receipts/capture.css',
-  '/static/vendor/alpinejs/cdn.min.js',
-  '/static/pwa/icon.svg',
-];
+const OFFLINE_REQUIRED_PATHS = ['/capture/'];
 
 document.addEventListener('alpine:init', () => {
   Alpine.data('receiptCapture', () => ({
@@ -65,7 +57,7 @@ document.addEventListener('alpine:init', () => {
       }
       try {
         await navigator.serviceWorker.ready;
-        const matches = await Promise.all(OFFLINE_CORE_ASSETS.map((path) => caches.match(path)));
+        const matches = await Promise.all(this.offlineCoreAssets().map((path) => caches.match(path)));
         this.offlineReadyState = matches.every(Boolean) ? 'ready' : 'checking';
       } catch (error) {
         this.offlineReadyState = 'checking';
@@ -76,6 +68,28 @@ document.addEventListener('alpine:init', () => {
       if (this.offlineReadyState === 'ready') return 'Offline ready';
       if (this.offlineReadyState === 'unavailable') return 'Offline mode unavailable';
       return 'Preparing offline mode...';
+    },
+
+    offlineCoreAssets() {
+      const sameOriginPath = (value) => {
+        if (!value) return '';
+        try {
+          const url = new URL(value, window.location.origin);
+          if (url.origin !== window.location.origin) return '';
+          return `${url.pathname}${url.search}`;
+        } catch (error) {
+          return '';
+        }
+      };
+
+      const assetPaths = [
+        ...OFFLINE_REQUIRED_PATHS,
+        ...Array.from(document.querySelectorAll('link[href], script[src]')).map((element) => (
+          element instanceof HTMLLinkElement ? element.href : element.src
+        )),
+      ].map(sameOriginPath).filter(Boolean);
+
+      return [...new Set(assetPaths)];
     },
 
     async resumeSyncIfPossible() {

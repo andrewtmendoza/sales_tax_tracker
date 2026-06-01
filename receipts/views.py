@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
@@ -8,6 +9,7 @@ from urllib.parse import urlencode
 
 from botocore.exceptions import ClientError
 from django.contrib.auth.decorators import login_required
+from django.contrib.staticfiles.storage import staticfiles_storage
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -251,18 +253,25 @@ def web_manifest(request):
 
 
 def service_worker(request):
+    capture_path = reverse("receipts:capture")
+    dashboard_path = reverse("receipts:dashboard")
+    manifest_path = reverse("receipts:manifest")
+    core_assets = [
+        capture_path,
+        manifest_path,
+        staticfiles_storage.url("theme.css"),
+        staticfiles_storage.url("receipts/capture.js"),
+        staticfiles_storage.url("receipts/capture.css"),
+        staticfiles_storage.url("vendor/alpinejs/cdn.min.js"),
+        staticfiles_storage.url("pwa/icon.svg"),
+    ]
     js = """
-const CACHE_NAME = 'salt-helper-v7';
+const CACHE_NAME = 'salt-helper-v8';
 const NAVIGATION_TIMEOUT_MS = 2000;
-const CORE_ASSETS = [
-  '/capture/',
-  '/manifest.json',
-  '/static/theme.css',
-  '/static/receipts/capture.js',
-  '/static/receipts/capture.css',
-  '/static/vendor/alpinejs/cdn.min.js',
-  '/static/pwa/icon.svg',
-];
+const DASHBOARD_TIMEOUT_MS = 8000;
+const CAPTURE_PATH = <<CAPTURE_PATH>>;
+const DASHBOARD_PATH = <<DASHBOARD_PATH>>;
+const CORE_ASSETS = <<CORE_ASSETS>>;
 const OFFLINE_NOT_READY_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -289,11 +298,67 @@ const OFFLINE_NOT_READY_HTML = `<!doctype html>
   </main>
 </body>
 </html>`;
+const DASHBOARD_UNAVAILABLE_HTML = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard unavailable offline</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem; }
+    body { background: #f3f4f6; color: #111827; }
+    main { max-width: 34rem; margin: 15vh auto; background: white; }
+    main { border-radius: 1rem; padding: 1.5rem; }
+    main { box-shadow: 0 1rem 3rem rgb(15 23 42 / 0.12); }
+    h1 { margin-top: 0; font-size: 1.35rem; }
+    p { color: #4b5563; line-height: 1.5; }
+    a { color: #0f766e; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Dashboard unavailable offline.</h1>
+    <p>
+      Dashboard is unavailable while the server cannot be reached.
+      You can still capture receipts offline.
+    </p>
+    <p><a href="<<CAPTURE_HREF>>">Go to Capture</a></p>
+  </main>
+</body>
+</html>`;
+const PAGE_UNAVAILABLE_HTML = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Page unavailable offline</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; padding: 2rem; }
+    body { background: #f3f4f6; color: #111827; }
+    main { max-width: 34rem; margin: 15vh auto; background: white; }
+    main { border-radius: 1rem; padding: 1.5rem; }
+    main { box-shadow: 0 1rem 3rem rgb(15 23 42 / 0.12); }
+    h1 { margin-top: 0; font-size: 1.35rem; }
+    p { color: #4b5563; line-height: 1.5; }
+    a { color: #0f766e; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Page unavailable offline.</h1>
+    <p>
+      This page is unavailable while the server cannot be reached.
+      You can still capture receipts offline.
+    </p>
+    <p><a href="<<CAPTURE_HREF>>">Go to Capture</a></p>
+  </main>
+</body>
+</html>`;
 
-function fetchWithTimeout(request, timeoutMs) {
+function fetchWithTimeout(request, timeoutMs, cacheMode = 'default') {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(request, { cache: 'no-store', signal: controller.signal })
+  return fetch(request, { cache: cacheMode, signal: controller.signal })
     .finally(() => clearTimeout(timeout));
 }
 
@@ -306,7 +371,7 @@ async function cacheResponse(request, response) {
 }
 
 async function captureFallback() {
-  const cached = await caches.match('/capture/');
+  const cached = await caches.match(CAPTURE_PATH);
   if (cached) return cached;
   return new Response(OFFLINE_NOT_READY_HTML, {
     status: 503,
@@ -315,18 +380,66 @@ async function captureFallback() {
   });
 }
 
+function dashboardFallback() {
+  return new Response(DASHBOARD_UNAVAILABLE_HTML, {
+    status: 503,
+    statusText: 'Dashboard unavailable offline',
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
+
+function pageUnavailableFallback() {
+  return new Response(PAGE_UNAVAILABLE_HTML, {
+    status: 503,
+    statusText: 'Page unavailable offline',
+    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
+
+function sameOriginReferrerPath(request, url) {
+  if (!request.referrer) return '';
+  try {
+    const referrer = new URL(request.referrer);
+    if (referrer.origin !== url.origin) return '';
+    return referrer.pathname;
+  } catch (error) {
+    return '';
+  }
+}
+
+function isInitialDashboardLaunch(request, url) {
+  return url.pathname === DASHBOARD_PATH && !sameOriginReferrerPath(request, url);
+}
+
+function navigationFallback(request, url) {
+  if (url.pathname === CAPTURE_PATH || isInitialDashboardLaunch(request, url)) {
+    return captureFallback();
+  }
+  if (url.pathname === DASHBOARD_PATH) {
+    return dashboardFallback();
+  }
+  return pageUnavailableFallback();
+}
+
+function navigationTimeout(request, url) {
+  if (url.pathname === CAPTURE_PATH || isInitialDashboardLaunch(request, url)) {
+    return NAVIGATION_TIMEOUT_MS;
+  }
+  return DASHBOARD_TIMEOUT_MS;
+}
+
 function refreshCaptureShell(event, request) {
   event.waitUntil(
     fetchWithTimeout(request, NAVIGATION_TIMEOUT_MS)
-      .then((response) => (response.ok ? cacheResponse('/capture/', response) : null))
+      .then((response) => (response.ok ? cacheResponse(CAPTURE_PATH, response) : null))
       .catch(() => null)
   );
 }
 
 async function handleNavigation(event, request, url) {
   if (url.origin !== self.location.origin) return fetch(request);
-  if (url.pathname === '/capture/') {
-    const cached = await caches.match('/capture/');
+  if (url.pathname === CAPTURE_PATH) {
+    const cached = await caches.match(CAPTURE_PATH);
     if (cached) {
       refreshCaptureShell(event, request);
       return cached;
@@ -334,15 +447,19 @@ async function handleNavigation(event, request, url) {
   }
 
   try {
-    const response = await fetchWithTimeout(request, NAVIGATION_TIMEOUT_MS);
-    if (url.pathname === '/capture/' && response.ok) {
-      return cacheResponse('/capture/', response);
+    const response = await fetchWithTimeout(
+      request,
+      navigationTimeout(request, url),
+      'no-store'
+    );
+    if (url.pathname === CAPTURE_PATH && response.ok) {
+      return cacheResponse(CAPTURE_PATH, response);
     }
     if (response.status < 500) return response;
   } catch (error) {
-    return captureFallback();
+    return navigationFallback(request, url);
   }
-  return captureFallback();
+  return navigationFallback(request, url);
 }
 
 function refreshCachedRequest(event, request) {
@@ -403,6 +520,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(handleCachedGet(event, request, url));
 });
 """.strip()
+    js = js.replace("<<CAPTURE_PATH>>", json.dumps(capture_path))
+    js = js.replace("<<CAPTURE_HREF>>", capture_path)
+    js = js.replace("<<DASHBOARD_PATH>>", json.dumps(dashboard_path))
+    js = js.replace("<<CORE_ASSETS>>", json.dumps(core_assets))
     response = HttpResponse(js.encode(), content_type="application/javascript")
     response["Service-Worker-Allowed"] = "/"
     return response
